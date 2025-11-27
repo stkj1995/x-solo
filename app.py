@@ -2,6 +2,13 @@ from flask import Flask, render_template, request, session, redirect, url_for, j
 from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
+
+user_password = request.form["user_password"]
+hashed_password = generate_password_hash(user_password)  # this produces a string like your DB value
+
+import uuid
+user_verification_key = uuid.uuid4().hex
+
 import gspread
 import requests
 import json
@@ -56,6 +63,7 @@ def _____USER_____(): pass
 ##############################
 ##############################
 
+
 @app.get("/")
 def view_index():
    
@@ -84,9 +92,12 @@ def login(lan = "english"):
 
     if request.method == "POST":
         try:
+        
             # Validate           
+            ic(request.form)  # Se hvad der faktisk bliver sendt
             user_email = x.validate_user_email(lan)
             user_password = x.validate_user_password(lan)
+            ic(user_email, user_password)
             # Connect to the database
             q = "SELECT * FROM users WHERE user_email = %s"
             db, cursor = x.db()
@@ -97,15 +108,17 @@ def login(lan = "english"):
             if not check_password_hash(user["user_password"], user_password):
                 raise Exception(dictionary.invalid_credentials[lan], 400)
 
-            if user["user_verification_key"] != "":
-                raise Exception(dictionary.user_not_verified[lan], 400)
+            # if user["user_verification_key"] != "":
+            #     raise Exception(dictionary.user_not_verified[lan], 400)
             
             ic("user_verification_key:", user["user_verification_key"])
 
             user.pop("user_password")
 
             session["user"] = user
-            return f"""<browser mix-redirect="/home"></browser>"""
+            ic(user)
+            ic(request.form)
+            return f"""<browser mix-redirect="/home"></browser>""", 200
 
         except Exception as ex:
             ic(ex)
@@ -122,8 +135,6 @@ def login(lan = "english"):
         finally:
             if "cursor" in locals(): cursor.close()
             if "db" in locals(): db.close()
-
-
 
 
 ##############################
@@ -159,13 +170,15 @@ def signup(lan = "english"):
             cursor.execute(q, (user_pk, user_email, user_hashed_password, user_username, 
             user_first_name, user_last_name, user_avatar_path, user_verification_key, user_verified_at))
             db.commit()
+            q = "INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
             # send verification email
             email_verify_account = render_template("_email_verify_account.html", user_verification_key=user_verification_key)
             ic(email_verify_account)
-            x.send_email(user_email, "Verify your account", email_verify_account)
+            # x.send_email(user_email, "Verify your account", email_verify_account)
 
-            return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>""", 400
+            return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>""", 200
+
         except Exception as ex:
             ic(ex)
             # User errors
@@ -214,7 +227,7 @@ def verify_account():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-        
+
 
 # HOME #############################
 @app.get("/home")

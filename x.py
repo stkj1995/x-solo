@@ -64,34 +64,24 @@ def lans(key, lang=None):
 
 
 #####################################
-# def db():
-#     try:
-#         db = mysql.connector.connect(
-#             host="127.0.0.1",
-#             user="root",
-#             password="password",
-#             database="x",
-#             ssl_disabled=True  
-#         )
-#         cursor = db.cursor(dictionary=True)
-#         return db, cursor
-#     except mysql.connector.Error as e:
-#         print("MySQL Error:", e, flush=True)
-#         raise Exception("Database under maintenance", 500)
+import mysql.connector
 
 def db():
     try:
+        # Use the container name and internal MariaDB port
         db = mysql.connector.connect(
-            host = "mariadb",
-            user = "root",  
-            password = "password",
-            database = "x"
+            host="x_mariadb0",  # Docker container name
+            port=3306,          # Internal MariaDB port
+            user="root",        # Make sure this matches your MariaDB root user
+            password="root",    # Replace with the actual root password
+            database="x"        # Your database name
         )
         cursor = db.cursor(dictionary=True)
         return db, cursor
     except Exception as e:
         print(e, flush=True)
-        raise Exception("Twitter exception - Database under maintenance", 500)
+        raise Exception("Database under maintenance", 500)
+
 
 ##############################
 def no_cache(view):
@@ -200,6 +190,51 @@ def validate_comment(comment=""):
         raise Exception("x-error comment", 400)
     return comment
 
+##############################
+# VALIDATORS
+##############################
+
+def validate_user_email(lan="english"):
+    user_email = request.form.get("user_email", "").strip().lower()
+
+    if not user_email:
+        raise Exception("Email is required", 400)
+
+    if "@" not in user_email or "." not in user_email:
+        raise Exception("Invalid email format", 400)
+
+    return user_email
+
+
+def validate_user_password(lan="english"):
+    user_password = request.form.get("user_password", "")
+
+    if len(user_password) < 6:
+        raise Exception("Password must be at least 6 characters", 400)
+
+    return user_password
+
+
+def validate_user_username(lan="english"):
+    user_username = request.form.get("user_username", "").strip()
+
+    if not user_username:
+        raise Exception("Username is required", 400)
+
+    if len(user_username) < 3:
+        raise Exception("Username must be at least 3 characters", 400)
+
+    return user_username
+
+
+def validate_user_first_name(lan="english"):
+    user_first_name = request.form.get("user_first_name", "").strip()
+
+    if not user_first_name:
+        raise Exception("First name is required", 400)
+
+    return user_first_name
+
 
 ##############################
 def send_email(to_email, subject, template):
@@ -211,7 +246,7 @@ def send_email(to_email, subject, template):
 
         # Email and password of the sender's Gmail account
         sender_email = "sophieteinvigkjer@gmail.com"
-        password = "password"  # If 2FA is on, use an App Password instead
+        password = "tsmm iisu acbv zppl"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = to_email
