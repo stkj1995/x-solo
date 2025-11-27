@@ -22,15 +22,6 @@ app = Flask(__name__)
 
 UPLOAD_ITEM_FOLDER = './images'
 
-##############################
-# allowed_languages = ["english", "danish", "spanish"]
-# google_spread_sheet_key = "1TwU2j9Q32xUBA89Gb2iTeHdTAP7r3qAnoFZDUVtUmvo"
-# default_language = "english"
-
-# def lans(key):
-#     with open("dictionary.json", 'r', encoding='utf-8') as file:
-#         data = json.load(file)
-#     return data[key][default_language]
 
 ##############################
 # Multilanguage / Google Sheets setup
@@ -72,14 +63,15 @@ def lans(key, lang=None):
 
 
 
-
+#####################################
 def db():
     try:
         db = mysql.connector.connect(
-            host="x_mariadb0",    # check docker-compose service name
+            host="x_mariadb0",
             user="root",
-            password="password",  # root password from docker-compose
-            database="x"          # your database name
+            password="password",
+            database="x",
+            ssl_disabled=True   # disable SSL for Python
         )
         cursor = db.cursor(dictionary=True)
         return db, cursor
@@ -206,7 +198,7 @@ def send_email(to_email, subject, template):
 
         # Email and password of the sender's Gmail account
         sender_email = "sophieteinvigkjer@gmail.com"
-        password = "z"  # If 2FA is on, use an App Password instead
+        password = "wrdlqtdinbyuyeue"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = to_email

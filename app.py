@@ -70,66 +70,43 @@ def global_variables():
     )
 
 # LOGIN #############################
+from werkzeug.security import check_password_hash
+
 @app.route("/login", methods=["GET", "POST"])
-@app.route("/login/<lan>", methods=["GET", "POST"])
-@x.no_cache
-def login(lan = "english"):
-
-    if lan not in x.allowed_languages: lan = "english"
-    x.default_language = lan
-
+def login():
     if request.method == "GET":
-        if session.get("user", ""): return redirect(url_for("home"))
-        return render_template("login.html", lan=lan)
+        return render_template("login.html")
 
     if request.method == "POST":
         try:
-            # Validate           
-            user_email = x.validate_user_email(lan)
-            user_password = x.validate_user_password(lan)
-            # Connect to the database
-            q = "SELECT * FROM users WHERE user_email = %s"
+            user_email = request.form.get("user_email", "").strip()
+            user_password = request.form.get("user_password", "").strip()
+
             db, cursor = x.db()
-            cursor.execute(q, (user_email,))
+            cursor.execute("SELECT * FROM users WHERE user_email = %s", (user_email,))
             user = cursor.fetchone()
-            if not user: raise Exception(dictionary.user_not_found[lan], 400)
 
-            if not check_password_hash(user["user_password"], user_password):
-                raise Exception(dictionary.invalid_credentials[lan], 400)
+            if not user:
+                raise Exception("Invalid credentials")
+            if user['user_verified_at'] == 0:
+                raise Exception("Account not verified. Check your email.")
+            if not check_password_hash(user['user_password'], user_password):
+                raise Exception("Invalid credentials")
 
-            if user["user_verification_key"] != "":
-                raise Exception(dictionary.user_not_verified[lan], 400)
-            
-            ic("user_verification_key:", user["user_verification_key"])
+            # Login successful, set session etc.
+            # Example using Flask session:
+            from flask import session
+            session['user_pk'] = user['user_pk']
+            session['user_username'] = user['user_username']
 
-           # Remove the password from the user dict
-            user.pop("user_password", None)  # safe pop in case it's missing
-
-            # Save a clean user object in session with defaults
-            session["user"] = {
-                "user_pk": user["user_pk"],
-                "user_username": user["user_username"],
-                "user_first_name": user.get("user_first_name", ""),
-                "user_last_name": user.get("user_last_name", ""),
-                "user_avatar_path": user.get("user_avatar_path") or "unknown.jpg"
-            }
-            return f"""<browser mix-redirect="/home"></browser>"""
+            return redirect(url_for("home"))
 
         except Exception as ex:
-            ic(ex)
-
-            # User errors
-            if ex.args[1] == 400:
-                toast_error = render_template("___toast_error.html", message=ex.args[0])
-                return f"""<browser mix-update="#toast">{ toast_error }</browser>""", 400
-
-            # System or developer error
-            toast_error = render_template("___toast_error.html", message="System under maintenance")
-            return f"""<browser mix-bottom="#toast">{ toast_error }</browser>""", 500
-
+            return str(ex), 400
         finally:
             if "cursor" in locals(): cursor.close()
             if "db" in locals(): db.close()
+
 
 # SIGNUP #############################
 @app.route("/signup", methods=["GET", "POST"])
@@ -170,29 +147,16 @@ def signup(lan="english"):
             db.commit()
 
             # Send verification email
-            email_content = render_template("_email_verify_account.html", key=user_verification_key)
-            x.send_email(user_email, "Verify your account", email_content)
+            email_content = render_template("_email_verify_account.html", user_verification_key=user_verification_key)
+            print(f"Email would be sent to {user_email} with key {user_verification_key}")
 
             return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>"""
 
         except Exception as ex:
-            msg = str(ex)
-            if "Duplicate entry" in msg:
-                if user_email in msg:
-                    toast_msg = "Email already registered"
-                elif user_username in msg:
-                    toast_msg = "Username already registered"
-                else:
-                    toast_msg = "Duplicate entry"
-            else:
-                toast_msg = "System under maintenance"
-
-            toast_error = render_template("___toast_error.html", message=toast_msg)
-            return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
-
-        finally:
-            if "cursor" in locals(): cursor.close()
-            if "db" in locals(): db.close()
+            import traceback
+            tb = traceback.format_exc()
+            print(tb)  # This prints full traceback to your console
+            return f"<pre>{tb}</pre>", 400
 
 
 # HOME #############################

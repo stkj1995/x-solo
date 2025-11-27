@@ -5,9 +5,10 @@ def seed_database():
 
     try:
         db = mysql.connector.connect(
-            host="x_mariadb0",  # Docker container name for MariaDB
+            host="127.0.0.1",   # Localhost
+            port=3307,          # Docker mapped port
             user="root",
-            password="password",  # your root password
+            password="password",
             database="x"
         )
         cursor = db.cursor()
@@ -15,13 +16,17 @@ def seed_database():
         print("Error connecting to database:", e)
         return
 
+    # Read SQL file
     with open("x.sql", "r", encoding="utf-8") as f:
         sql_commands = f.read()
 
+    # Split commands by semicolon
+    statements = [s.strip() for s in sql_commands.split(";") if s.strip()]
+
     try:
-        # Execute the full SQL file, multi=True allows multiple statements
-        for result in cursor.execute(sql_commands, multi=True):
-            print("Executed:", result.statement[:50], "...")
+        for statement in statements:
+            cursor.execute(statement)
+            print("Executed:", statement[:50], "...")
     except mysql.connector.Error as e:
         print("Error executing SQL:", e)
 
