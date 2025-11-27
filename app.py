@@ -109,60 +109,6 @@ def login():
 
 
 # SIGNUP #############################
-# @app.route("/signup", methods=["GET", "POST"])
-# @app.route("/signup/<lan>", methods=["GET", "POST"])
-# def signup(lan="english"):
-#     if lan not in x.allowed_languages:
-#         lan = "english"
-#     x.default_language = lan
-
-#     if request.method == "GET":
-#         return render_template("signup.html", lan=lan)
-
-#     if request.method == "POST":
-#         try:
-#             user_email = x.validate_user_email()
-#             user_password = x.validate_user_password()
-#             user_username = x.validate_user_username()
-#             user_first_name = x.validate_user_first_name()
-
-#             import uuid
-#             from werkzeug.security import generate_password_hash
-
-#             user_pk = uuid.uuid4().hex
-#             user_last_name = ""
-#             user_avatar_path = "https://avatar.iran.liara.run/public/40"
-#             user_verification_key = uuid.uuid4().hex
-#             user_verified_at =  int(time.time()) 
-#             user_hashed_password = generate_password_hash(user_password)
-
-#             db, cursor = x.db()
-#             cursor.execute(
-#                 "INSERT INTO users VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-#                 (
-#                     user_pk, user_email, user_hashed_password, user_username,
-#                     user_first_name, user_last_name, user_avatar_path,
-#                     user_verification_key, user_verified_at
-#                 )
-#             )
-#             db.commit()
-
-#             import send_mail 
-#             send_mail.send_verify_email(user_email, user_verification_key)
-#             print(f"Verification email sent to {user_email} with key {user_verification_key}")
-
-#             return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>"""
-
-#         except Exception as ex:
-#             import traceback
-#             traceback.print_exc()  
-#             return f"<pre>{str(ex)}</pre>", 400
-
-#         finally:
-#             if "cursor" in locals(): cursor.close()
-#             if "db" in locals(): db.close()
-
-
 @app.route("/signup", methods=["GET", "POST"])
 @app.route("/signup/<lan>", methods=["GET", "POST"])
 def signup(lan="english"):
@@ -175,48 +121,69 @@ def signup(lan="english"):
 
     if request.method == "POST":
         try:
-            # Get user input
             user_email = x.validate_user_email()
             user_password = x.validate_user_password()
             user_username = x.validate_user_username()
             user_first_name = x.validate_user_first_name()
-            user_last_name = ""
-            user_avatar_path = "https://avatar.iran.liara.run/public/40"
 
-            # Hash password and prepare user
-            import uuid, time
+            import uuid
             from werkzeug.security import generate_password_hash
 
             user_pk = uuid.uuid4().hex
+            user_last_name = ""
+            user_avatar_path = "https://avatar.iran.liara.run/public/40"
+            user_verification_key = uuid.uuid4().hex
+            user_verified_at =  int(time.time()) 
             user_hashed_password = generate_password_hash(user_password)
-            user_verified_at = int(time.time())  # verified immediately
 
-            # Insert into database
-            db_conn, cursor = x.db()
+            db, cursor = x.db()
             cursor.execute(
                 "INSERT INTO users VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     user_pk, user_email, user_hashed_password, user_username,
                     user_first_name, user_last_name, user_avatar_path,
-                    "",  # no verification key
-                    user_verified_at
+                    user_verification_key, user_verified_at
                 )
             )
-            db_conn.commit()
+            db.commit()
 
-            print(f"User {user_email} signed up successfully!")
+            import send_mail 
+            send_mail.send_verify_email(user_email, user_verification_key)
+            print(f"Verification email sent to {user_email} with key {user_verification_key}")
+
             return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>"""
 
         except Exception as ex:
             import traceback
-            traceback.print_exc()
+            traceback.print_exc()  
             return f"<pre>{str(ex)}</pre>", 400
 
         finally:
             if "cursor" in locals(): cursor.close()
-            if "db_conn" in locals(): db_conn.close()
+            if "db" in locals(): db.close()
 
+# VERIFY ACCOUNT #############################
+@app.route("/verify-account", methods=["GET"])
+def verify_account():
+    try:
+        user_verification_key = x.validate_uuid4_without_dashes(request.args.get("key", ""))
+        user_verified_at = int(time.time())
+        db, cursor = x.db()
+        q = "UPDATE users SET user_verification_key = '', user_verified_at = %s WHERE user_verification_key = %s"
+        cursor.execute(q, (user_verified_at, user_verification_key))
+        db.commit()
+        if cursor.rowcount != 1: raise Exception("Invalid key", 400)
+        return redirect(url_for('login', verified="1"))
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+    
+        if ex.args[1] == 400: return ex.args[0], 400    
 
+        return "Cannot verify user"
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 # HOME #############################
 @app.get("/home")
@@ -250,28 +217,7 @@ def home():
         if "db" in locals(): db.close()
 
 
-# VERIFY ACCOUNT #############################
-# @app.route("/verify-account", methods=["GET"])
-# def verify_account():
-#     try:
-#         user_verification_key = x.validate_uuid4_without_dashes(request.args.get("key", ""))
-#         user_verified_at = int(time.time())
-#         db, cursor = x.db()
-#         q = "UPDATE users SET user_verification_key = '', user_verified_at = %s WHERE user_verification_key = %s"
-#         cursor.execute(q, (user_verified_at, user_verification_key))
-#         db.commit()
-#         if cursor.rowcount != 1: raise Exception("Invalid key", 400)
-#         return redirect(url_for('login', verified="1"))
-#     except Exception as ex:
-#         ic(ex)
-#         if "db" in locals(): db.rollback()
-    
-#         if ex.args[1] == 400: return ex.args[0], 400    
 
-#         return "Cannot verify user"
-#     finally:
-#         if "cursor" in locals(): cursor.close()
-#         if "db" in locals(): db.close()
 
 ##############################
 @app.get("/logout")
