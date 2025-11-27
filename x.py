@@ -64,20 +64,36 @@ def lans(key, lang=None):
 
 
 #####################################
+# def db():
+#     try:
+#         db = mysql.connector.connect(
+#             host="127.0.0.1",
+#             user="root",
+#             password="password",
+#             database="x",
+#             ssl_disabled=True  
+#         )
+#         cursor = db.cursor(dictionary=True)
+#         return db, cursor
+#     except mysql.connector.Error as e:
+#         print("MySQL Error:", e, flush=True)
+#         raise Exception("Database under maintenance", 500)
+import mysql.connector
+
 def db():
     try:
-        db = mysql.connector.connect(
-            host="x_mariadb0",
-            user="root",
-            password="password",
-            database="x",
-            ssl_disabled=True  
+        db_conn = mysql.connector.connect(
+            host="127.0.0.1",      # use local host
+            user="root",           # your MySQL username
+            password="your_pass",  # your MySQL password
+            database="your_db"     # the database you created
         )
-        cursor = db.cursor(dictionary=True)
-        return db, cursor
-    except mysql.connector.Error as e:
-        print("MySQL Error:", e, flush=True)
+        cursor = db_conn.cursor(dictionary=True)
+        return db_conn, cursor
+    except mysql.connector.Error as err:
+        print("Database connection error:", err)
         raise Exception("Database under maintenance", 500)
+
 
 
 ##############################
