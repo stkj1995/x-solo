@@ -1,0 +1,24 @@
+<!-- <form id="post_container" action="{{ url_for('api_create_post') }}" mix-post class="d-flex flex-col w-full ml-2">
+    <textarea name="post" placeholder="What is new ?" 
+    class="w-full outline-1 outline-s-solid outline-c-gray:+50 pa-2"></textarea>
+    <button type="submit" mix-default="Post" mix-await="Posting ..." 
+    class="w-auto ml-auto mt-2 bg-c-black text-c-white py-2 px-12 rounded-xl">
+        Post
+    </button>
+</form> -->
+
+<form id="post_container" enctype="multipart/form-data" class="d-flex flex-col w-full ml-2">
+
+    <label for="post_text" class="sr-only">Post text</label>
+    <textarea id="post_text" name="post" placeholder="What's new?"
+        class="w-full outline-1 outline-s-solid outline-c-gray:+50 pa-2"></textarea>
+
+    <label for="post_image" class="mt-2">Attach image or video</label>
+    <input id="post_image" type="file" name="post_image" accept="image/*,video/*" class="mt-1"
+        title="Upload an image or video">
+
+    <button type="submit" class="w-auto ml-auto mt-2 bg-c-black text-c-white py-2 px-12 rounded-xl">
+        Post
+    </button>
+</form>
+

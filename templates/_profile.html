@@ -1,0 +1,55 @@
+<h1>PROFILE</h1>
+
+<form class="x-dialog__form" action="{{ url_for('api_update_profile') }}" mix-post autocomplete="off"
+  enctype="multipart/form-data">
+  <!-- Show current avatar -->
+  <div class="current_avatar">
+    <!-- user.user_avatar_path is to be used to make it dynamic -->
+    <img src="{{ user.user_avatar_path or url_for('static', filename='images/avatar_2.jpg') }}"
+      alt="Current profile picture" class="avatar_preview" />
+  </div>
+
+  <!-- Upload new image -->
+  <div>
+    <label for="user_avatar">
+      <span>Profile picture</span>
+    </label>
+    <!-- will need to validate the input of files differently than mix-check cuz it's not a string -->
+    <input name="useravatar" id="user_avatar" type="file" accept="image/*" />
+  </div>
+
+  <div>
+    <label for="user_email">
+      <span>Email</span>
+    </label>
+    <input name="user_email" id="user_email" type="text" mix-check="{{ x.REGEX_EMAIL }}"
+      value="{{ user.user_email }}" />
+  </div>
+  <div>
+    <label for="user_username">
+      <span>Username</span> - {{ x.USER_USERNAME_MIN }} to {{
+      x.USER_USERNAME_MAX }} characters
+    </label>
+    <input name="user_username" id="user_username" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
+      value="{{ user.user_username }}" />
+  </div>
+  <div>
+    <label for="user_first_name">
+      <span>User first name</span> - {{ x.USER_FIRST_NAME_MIN }} to {{
+      x.USER_FIRST_NAME_MAX }} characters
+    </label>
+    <input name="user_first_name" id="user_first_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
+      value="{{ user.user_first_name }}" />
+  </div>
+  <div>
+    <label for="user_last_name">
+      <span>User last name</span> - {{ x.USER_LAST_NAME_MIN }} to {{
+      x.USER_LAST_NAME_MAX }} characters
+    </label>
+    <input name="user_last_name" id="user_last_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
+      value="{{ user.user_last_name }}" />
+  </div>
+  <button type="submit" class="x-dialog__btn" mix-default="Update profile" mix-await="Updating profile ...">
+    Update profile
+  </button>
+</form>
