@@ -71,20 +71,21 @@ def lans(key, lang=None):
     return dictionary.get(key, {}).get(lang, key)
 
 
-##############################
+
+
 def db():
     try:
         db = mysql.connector.connect(
-            host = "mariadb",
-            user = "root",  
-            password = "password",
-            database = "x"
+            host="x_mariadb0",    # check docker-compose service name
+            user="root",
+            password="password",  # root password from docker-compose
+            database="x"          # your database name
         )
         cursor = db.cursor(dictionary=True)
         return db, cursor
-    except Exception as e:
-        print(e, flush=True)
-        raise Exception("Twitter exception - Database under maintenance", 500)
+    except mysql.connector.Error as e:
+        print("MySQL Error:", e, flush=True)
+        raise Exception("Database under maintenance", 500)
 
 
 ##############################
@@ -204,8 +205,8 @@ def send_email(to_email, subject, template):
         # Copy the key : pdru ctfd jdhk xxci
 
         # Email and password of the sender's Gmail account
-        sender_email = "marielouisephilipsen@gmail.com"
-        password = "riariqmzlacvjpkz"  # If 2FA is on, use an App Password instead
+        sender_email = "sophieteinvigkjer@gmail.com"
+        password = "z"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = to_email
