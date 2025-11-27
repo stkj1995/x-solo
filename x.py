@@ -71,7 +71,7 @@ def db():
             user="root",
             password="password",
             database="x",
-            ssl_disabled=True   # disable SSL for Python
+            ssl_disabled=True  
         )
         cursor = db.cursor(dictionary=True)
         return db, cursor
@@ -198,7 +198,7 @@ def send_email(to_email, subject, template):
 
         # Email and password of the sender's Gmail account
         sender_email = "sophieteinvigkjer@gmail.com"
-        password = "wrdlqtdinbyuyeue"  # If 2FA is on, use an App Password instead
+        password = "tsmm iisu acbv zppl"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = to_email
