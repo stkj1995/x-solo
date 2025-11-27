@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 from flask_session import Session
 from werkzeug.security import generate_password_hash
-print(generate_password_hash("password"))
 from werkzeug.security import check_password_hash
 import uuid
 user_verification_key = uuid.uuid4().hex
