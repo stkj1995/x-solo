@@ -78,23 +78,20 @@ def lans(key, lang=None):
 #     except mysql.connector.Error as e:
 #         print("MySQL Error:", e, flush=True)
 #         raise Exception("Database under maintenance", 500)
-import mysql.connector
 
 def db():
     try:
-        db_conn = mysql.connector.connect(
-            host="127.0.0.1",      # use local host
-            user="root",           # your MySQL username
-            password="your_pass",  # your MySQL password
-            database="your_db"     # the database you created
+        db = mysql.connector.connect(
+            host = "mariadb",
+            user = "root",  
+            password = "password",
+            database = "x"
         )
-        cursor = db_conn.cursor(dictionary=True)
-        return db_conn, cursor
-    except mysql.connector.Error as err:
-        print("Database connection error:", err)
-        raise Exception("Database under maintenance", 500)
-
-
+        cursor = db.cursor(dictionary=True)
+        return db, cursor
+    except Exception as e:
+        print(e, flush=True)
+        raise Exception("Twitter exception - Database under maintenance", 500)
 
 ##############################
 def no_cache(view):
@@ -214,7 +211,7 @@ def send_email(to_email, subject, template):
 
         # Email and password of the sender's Gmail account
         sender_email = "sophieteinvigkjer@gmail.com"
-        password = "tsmm iisu acbv zppl"  # If 2FA is on, use an App Password instead
+        password = "password"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = to_email

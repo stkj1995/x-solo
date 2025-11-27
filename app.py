@@ -69,51 +69,69 @@ def global_variables():
         x = x
     )
 
-# LOGIN #############################
-from werkzeug.security import check_password_hash
-
+##############################
 @app.route("/login", methods=["GET", "POST"])
-def login():
+@app.route("/login/<lan>", methods=["GET", "POST"])
+@x.no_cache
+def login(lan = "english"):
+
+    if lan not in x.allowed_languages: lan = "english"
+    x.default_language = lan
+
     if request.method == "GET":
-        return render_template("login.html")
+        if session.get("user", ""): return redirect(url_for("home"))
+        return render_template("login.html", lan=lan)
 
     if request.method == "POST":
         try:
-            user_email = request.form.get("user_email", "").strip()
-            user_password = request.form.get("user_password", "").strip()
-
+            # Validate           
+            user_email = x.validate_user_email(lan)
+            user_password = x.validate_user_password(lan)
+            # Connect to the database
+            q = "SELECT * FROM users WHERE user_email = %s"
             db, cursor = x.db()
-            cursor.execute("SELECT * FROM users WHERE user_email = %s", (user_email,))
+            cursor.execute(q, (user_email,))
             user = cursor.fetchone()
+            if not user: raise Exception(dictionary.user_not_found[lan], 400)
 
-            if not user:
-                raise Exception("Invalid credentials")
-            if user['user_verified_at'] == 0:
-                raise Exception("Account not verified. Check your email.")
-            if not check_password_hash(user['user_password'], user_password):
-                raise Exception("Invalid credentials")
+            if not check_password_hash(user["user_password"], user_password):
+                raise Exception(dictionary.invalid_credentials[lan], 400)
 
-            # Login successful, set session etc.
-            # Example using Flask session:
-            from flask import session
-            session['user_pk'] = user['user_pk']
-            session['user_username'] = user['user_username']
+            if user["user_verification_key"] != "":
+                raise Exception(dictionary.user_not_verified[lan], 400)
+            
+            ic("user_verification_key:", user["user_verification_key"])
 
-            return redirect(url_for("home"))
+            user.pop("user_password")
+
+            session["user"] = user
+            return f"""<browser mix-redirect="/home"></browser>"""
 
         except Exception as ex:
-            return str(ex), 400
+            ic(ex)
+
+            # User errors
+            if ex.args[1] == 400:
+                toast_error = render_template("___toast_error.html", message=ex.args[0])
+                return f"""<browser mix-update="#toast">{ toast_error }</browser>""", 400
+
+            # System or developer error
+            toast_error = render_template("___toast_error.html", message="System under maintenance")
+            return f"""<browser mix-bottom="#toast">{ toast_error }</browser>""", 500
+
         finally:
             if "cursor" in locals(): cursor.close()
             if "db" in locals(): db.close()
 
 
-# SIGNUP #############################
+
+
+##############################
 @app.route("/signup", methods=["GET", "POST"])
 @app.route("/signup/<lan>", methods=["GET", "POST"])
-def signup(lan="english"):
-    if lan not in x.allowed_languages:
-        lan = "english"
+def signup(lan = "english"):
+
+    if lan not in x.allowed_languages: lan = "english"
     x.default_language = lan
 
     if request.method == "GET":
@@ -121,46 +139,56 @@ def signup(lan="english"):
 
     if request.method == "POST":
         try:
+            # Validate
             user_email = x.validate_user_email()
             user_password = x.validate_user_password()
             user_username = x.validate_user_username()
             user_first_name = x.validate_user_first_name()
 
-            import uuid
-            from werkzeug.security import generate_password_hash
-
             user_pk = uuid.uuid4().hex
             user_last_name = ""
             user_avatar_path = "https://avatar.iran.liara.run/public/40"
             user_verification_key = uuid.uuid4().hex
-            user_verified_at =  int(time.time()) 
+            user_verified_at = 0
+
             user_hashed_password = generate_password_hash(user_password)
 
+            # Connect to the database
+            q = "INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
             db, cursor = x.db()
-            cursor.execute(
-                "INSERT INTO users VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (
-                    user_pk, user_email, user_hashed_password, user_username,
-                    user_first_name, user_last_name, user_avatar_path,
-                    user_verification_key, user_verified_at
-                )
-            )
+            cursor.execute(q, (user_pk, user_email, user_hashed_password, user_username, 
+            user_first_name, user_last_name, user_avatar_path, user_verification_key, user_verified_at))
             db.commit()
 
-            import send_mail 
-            send_mail.send_verify_email(user_email, user_verification_key)
-            print(f"Verification email sent to {user_email} with key {user_verification_key}")
+            # send verification email
+            email_verify_account = render_template("_email_verify_account.html", user_verification_key=user_verification_key)
+            ic(email_verify_account)
+            x.send_email(user_email, "Verify your account", email_verify_account)
 
-            return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>"""
-
+            return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>""", 400
         except Exception as ex:
-            import traceback
-            traceback.print_exc()  
-            return f"<pre>{str(ex)}</pre>", 400
+            ic(ex)
+            # User errors
+            if ex.args[1] == 400:
+                toast_error = render_template("___toast_error.html", message=ex.args[0])
+                return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
+            
+            # Database errors
+            if "Duplicate entry" and user_email in str(ex): 
+                toast_error = render_template("___toast_error.html", message="Email already registered")
+                return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
+            if "Duplicate entry" and user_username in str(ex): 
+                toast_error = render_template("___toast_error.html", message="Username already registered")
+                return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
+            
+            # System or developer error
+            toast_error = render_template("___toast_error.html", message="System under maintenance")
+            return f"""<mixhtml mix-bottom="#toast">{ toast_error }</mixhtml>""", 500
 
         finally:
             if "cursor" in locals(): cursor.close()
             if "db" in locals(): db.close()
+
 
 # VERIFY ACCOUNT #############################
 @app.route("/verify-account", methods=["GET"])
@@ -173,17 +201,20 @@ def verify_account():
         cursor.execute(q, (user_verified_at, user_verification_key))
         db.commit()
         if cursor.rowcount != 1: raise Exception("Invalid key", 400)
-        return redirect(url_for('login', verified="1"))
+        return redirect( url_for('login') )
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
-    
+        # User errors
         if ex.args[1] == 400: return ex.args[0], 400    
 
+        # System or developer error
         return "Cannot verify user"
+
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+        
 
 # HOME #############################
 @app.get("/home")
