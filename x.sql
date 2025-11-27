@@ -1,31 +1,11 @@
----
-
--- Full x.sql with CREATE + INSERT
--- For WebDev & Databases Exam
--- Author: Sophie Teinvig Kjer
--- Generated: 2025-11-27
-
----
-
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 SET NAMES utf8mb4;
 
----
-
--- DATABASE
-
----
-
 CREATE DATABASE IF NOT EXISTS `x`;
 USE `x`;
 
----
-
--- TABLE: users
-
----
 
 CREATE TABLE IF NOT EXISTS `users` (
 `user_pk` char(32) NOT NULL,
@@ -42,17 +22,15 @@ UNIQUE KEY `user_email` (`user_email`),
 UNIQUE KEY `user_username` (`user_username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INSERT sample users
-INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `user_verification_key`, `user_verified_at`) VALUES
+INSERT INTO `users` VALUES
 ('u001', '[sophie@example.com](mailto:sophie@example.com)', 'scrypt:hash1', 'sophie', 'Sophie', 'Teinvig', 'avatar_1.jpg', '', 1700000000),
 ('u002', '[daniel@example.com](mailto:daniel@example.com)', 'scrypt:hash2', 'daniel', 'Daniel', '', 'avatar_2.jpg', 'key123', 0),
-('u003', '[mille@example.com](mailto:mille@example.com)', 'scrypt:hash3', 'mille', 'Mille', '', 'avatar_3.jpg', 'key456', 0);
+('u003', '[mille@example.com](mailto:mille@example.com)', 'scrypt:hash3', 'mille', 'Mille', '', 'avatar_3.jpg', 'key456', 0),
+('u004', '[anna@example.com](mailto:anna@example.com)', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', '', 1700001000),
+('u005', '[max@example.com](mailto:max@example.com)', 'scrypt:hash5', 'max', 'Max', '', 'avatar_5.jpg', '', 1700002000),
+('u006', '[lara@example.com](mailto:lara@example.com)', 'scrypt:hash6', 'lara', 'Lara', '', 'avatar_6.jpg', 'key789', 0);
 
----
 
--- TABLE: posts
-
----
 
 CREATE TABLE IF NOT EXISTS `posts` (
 `post_pk` char(32) NOT NULL,
@@ -63,17 +41,16 @@ CREATE TABLE IF NOT EXISTS `posts` (
 PRIMARY KEY (`post_pk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INSERT sample posts
-INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`) VALUES
+INSERT INTO `posts` VALUES
 ('p001', 'u001', 'Hello world!', 0, 'post_1.jpg'),
 ('p002', 'u002', 'My first post', 0, ''),
-('p003', 'u003', 'Testing posts', 0, 'post_2.jpg');
+('p003', 'u003', 'Testing posts', 0, 'post_2.jpg'),
+('p004', 'u001', 'Another day, another post', 0, ''),
+('p005', 'u004', 'Excited to join!', 0, 'post_3.jpg'),
+('p006', 'u005', 'Good morning everyone', 0, ''),
+('p007', 'u006', 'Loving this platform', 0, 'post_4.jpg');
 
----
 
--- TABLE: comments
-
----
 
 CREATE TABLE IF NOT EXISTS `comments` (
 `comment_pk` char(32) NOT NULL,
@@ -84,17 +61,14 @@ CREATE TABLE IF NOT EXISTS `comments` (
 PRIMARY KEY (`comment_pk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INSERT sample comments
-INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `comment_message`, `comment_created_at`) VALUES
+INSERT INTO `comments` VALUES
 ('c001', 'p001', 'u002', 'Nice post!', 1700000100),
 ('c002', 'p001', 'u003', 'I agree!', 1700000200),
-('c003', 'p002', 'u001', 'Welcome!', 1700000300);
+('c003', 'p002', 'u001', 'Welcome!', 1700000300),
+('c004', 'p004', 'u004', 'Cool update!', 1700000400),
+('c005', 'p005', 'u001', 'Congrats!', 1700000500),
+('c006', 'p006', 'u003', 'Good morning!', 1700000600);
 
----
-
--- TABLE: follows
-
----
 
 CREATE TABLE IF NOT EXISTS `follows` (
 `follow_pk` char(32) NOT NULL,
@@ -103,16 +77,14 @@ CREATE TABLE IF NOT EXISTS `follows` (
 PRIMARY KEY (`follow_pk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INSERT sample follows
-INSERT INTO `follows` (`follow_pk`, `follow_user_fk`, `follow_target_fk`) VALUES
+INSERT INTO `follows` VALUES
 ('f001', 'u001', 'u002'),
-('f002', 'u003', 'u001');
+('f002', 'u003', 'u001'),
+('f003', 'u004', 'u001'),
+('f004', 'u005', 'u003'),
+('f005', 'u006', 'u002');
 
----
 
--- TABLE: likes
-
----
 
 CREATE TABLE IF NOT EXISTS `likes` (
 `like_pk` char(32) NOT NULL,
@@ -121,16 +93,16 @@ CREATE TABLE IF NOT EXISTS `likes` (
 PRIMARY KEY (`like_pk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INSERT sample likes
-INSERT INTO `likes` (`like_pk`, `like_post_fk`, `like_user_fk`) VALUES
+INSERT INTO `likes` VALUES
 ('l001', 'p001', 'u002'),
-('l002', 'p002', 'u001');
+('l002', 'p002', 'u001'),
+('l003', 'p003', 'u004'),
+('l004', 'p004', 'u003'),
+('l005', 'p005', 'u001'),
+('l006', 'p006', 'u005'),
+('l007', 'p007', 'u006');
 
----
 
--- TABLE: languages
-
----
 
 CREATE TABLE IF NOT EXISTS `languages` (
 `language_pk` char(32) NOT NULL,
@@ -140,16 +112,13 @@ PRIMARY KEY (`language_pk`),
 UNIQUE KEY `language_code` (`language_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INSERT sample languages
-INSERT INTO `languages` (`language_pk`, `language_code`, `language_name`) VALUES
+INSERT INTO `languages` VALUES
 ('lang001', 'en', 'English'),
-('lang002', 'da', 'Danish');
+('lang002', 'da', 'Danish'),
+('lang003', 'es', 'Spanish'),
+('lang004', 'fr', 'French');
 
----
 
--- TABLE: trends
-
----
 
 CREATE TABLE IF NOT EXISTS `trends` (
 `trend_pk` char(32) NOT NULL,
@@ -158,9 +127,10 @@ CREATE TABLE IF NOT EXISTS `trends` (
 PRIMARY KEY (`trend_pk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- INSERT sample trends
-INSERT INTO `trends` (`trend_pk`, `trend_title`, `trend_message`) VALUES
+INSERT INTO `trends` VALUES
 ('t001', 'New Launch', 'A new rocket has been sent to the moon'),
-('t002', 'Politics are Rotten', 'Everyone talks, few act');
+('t002', 'Politics are Rotten', 'Everyone talks, few act'),
+('t003', 'Tech Innovations', 'AI is taking over many tasks'),
+('t004', 'Social Media Buzz', 'New app goes viral overnight');
 
 COMMIT;
