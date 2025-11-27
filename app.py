@@ -1,11 +1,8 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 from flask_session import Session
 from werkzeug.security import generate_password_hash
+print(generate_password_hash("password"))
 from werkzeug.security import check_password_hash
-
-user_password = request.form["user_password"]
-hashed_password = generate_password_hash(user_password)  # this produces a string like your DB value
-
 import uuid
 user_verification_key = uuid.uuid4().hex
 
@@ -92,7 +89,8 @@ def login(lan = "english"):
 
     if request.method == "POST":
         try:
-        
+            if request.method == "POST":
+                user_password = request.form["user_password"]
             # Validate           
             ic(request.form)  # Se hvad der faktisk bliver sendt
             user_email = x.validate_user_email(lan)
