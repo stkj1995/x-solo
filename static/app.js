@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.remove("hidden-on-load");
 });
 
-
 const burger = document.querySelector(".burger");
 const nav = document.querySelector("nav");
 
@@ -34,7 +33,6 @@ document.getElementById("post_container").addEventListener("submit", function(e)
     e.preventDefault();
     createPost("post_container", "posts");
 });
-
 
 // ##############################
 function editPost(post_pk, currentText) {
@@ -88,8 +86,6 @@ function savePost(post_pk) {
     .catch(err => console.error("Save post error:", err));
 }
 
-
-
 // ##############################
 function cancelEdit(post_pk, originalText) {
     const postDiv = document.getElementById(`post_${post_pk}`);
@@ -117,6 +113,7 @@ function get_search_results(
   }
   server(url, method, data_source_selector, function_after_fetch);
 }
+
 // ##############################
 function deletePost(post_pk) {
     console.log("Delete clicked", post_pk);
@@ -137,7 +134,6 @@ function deletePost(post_pk) {
     })
     .catch(err => console.error("Delete post error:", err));
 }
-
 
 // ##############################
 async function server(url, method, data_source_selector, function_after_fetch) {
@@ -167,11 +163,14 @@ function get_search_results(url, method, data_source_selector, function_after_fe
 }
 
 // ##############################
-document.querySelectorAll(".follow-btn").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-        const button = e.currentTarget;
+document.addEventListener("DOMContentLoaded", () => {
+    // Event delegation for dynamic buttons
+    document.body.addEventListener("click", async (e) => {
+        const button = e.target.closest(".follow-btn");
+        if (!button) return;
+
         const user_pk = button.dataset.user;
-        const action = button.textContent.trim().toLowerCase() === "follow" ? "follow" : "unfollow";
+        let action = button.dataset.action; // "follow" or "unfollow"
 
         const formData = new FormData();
         formData.append("following_pk", user_pk);
@@ -180,32 +179,32 @@ document.querySelectorAll(".follow-btn").forEach(btn => {
             const res = await fetch(`/api-${action}`, {
                 method: "POST",
                 body: formData,
-                credentials: "same-origin"
+                credentials: "same-origin", // send session cookie
             });
             const data = await res.json();
 
             if (data.success) {
                 if (action === "follow") {
-                    // Change button permanently to "Following"
-                    button.textContent = "Following";
-                    button.classList.remove("bg-c-white");
-                    button.classList.add("bg-c-black");
+                    button.textContent = "Unfollow";
+                    button.dataset.action = "unfollow";
+                    button.classList.remove("bg-c-black");
+                    button.classList.add("bg-c-gray-500");
                 } else {
-                    // Change back to Follow
                     button.textContent = "Follow";
+                    button.dataset.action = "follow";
                     button.classList.remove("bg-c-gray-500");
                     button.classList.add("bg-c-black");
                 }
+                console.log(`Follow toggled: ${action} -> ${button.textContent}`);
             } else {
+                console.error("Server error:", data.error);
                 alert("Error: " + data.error);
             }
         } catch (err) {
-            console.error("Follow toggle error:", err);
-            alert("Could not toggle follow. Check console.");
+            console.error("Fetch error:", err);
         }
     });
 });
-
 
 
 // ##############################

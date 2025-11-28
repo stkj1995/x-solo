@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 28. 11 2025 kl. 09:40:15
+-- Genereringstid: 28. 11 2025 kl. 12:09:43
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -50,7 +50,7 @@ CREATE TABLE `admin` (
   `admin_first_name` varchar(100) NOT NULL,
   `admin_last_name` varchar(100) NOT NULL,
   `admin_role` varchar(50) DEFAULT 'superadmin',
-  `admin_created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `admin_created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -64,7 +64,6 @@ CREATE TABLE `comments` (
   `comment_post_fk` char(32) NOT NULL,
   `comment_user_fk` char(32) NOT NULL,
   `comment_message` varchar(255) NOT NULL,
-  `comment_created_at` bigint(20) UNSIGNED NOT NULL,
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -72,13 +71,11 @@ CREATE TABLE `comments` (
 -- Data dump for tabellen `comments`
 --
 
-INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `comment_message`, `comment_created_at`, `created_at`) VALUES
-('c001', 'p001', 'u002', 'Nice post!', 1700000100, '2025-11-27 13:01:44'),
-('c002', 'p001', 'u003', 'I agree!', 1700000200, '2025-11-27 13:01:44'),
-('c003', 'p002', 'u001', 'Welcome!', 1700000300, '2025-11-27 13:01:44'),
-('c004', 'p004', 'u004', 'Cool update!', 1700000400, '2025-11-27 13:01:44'),
-('c005', 'p005', 'u001', 'Congrats!', 1700000500, '2025-11-27 13:01:44'),
-('c006', 'p006', 'u003', 'Good morning!', 1700000600, '2025-11-27 13:01:44');
+INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `comment_message`, `created_at`) VALUES
+('c001', 'p001', 'u002', 'Nice post!', '2025-11-27 13:01:44'),
+('c002', 'p001', 'u003', 'I agree!', '2025-11-27 13:01:44'),
+('c004', 'p004', 'u004', 'Cool update!', '2025-11-27 13:01:44'),
+('c006', 'p006', 'u003', 'Good morning!', '2025-11-27 13:01:44');
 
 -- --------------------------------------------------------
 
@@ -123,8 +120,7 @@ CREATE TABLE `languages` (
 INSERT INTO `languages` (`language_pk`, `language_code`, `language_name`) VALUES
 ('lang001', 'en', 'English'),
 ('lang002', 'da', 'Danish'),
-('lang003', 'es', 'Spanish'),
-('lang004', 'fr', 'French');
+('lang003', 'es', 'Spanish');
 
 -- --------------------------------------------------------
 
@@ -192,7 +188,7 @@ CREATE TABLE `most_liked_posts` (
 
 CREATE TABLE `posts` (
   `post_pk` char(32) NOT NULL,
-  `post_user_fk` varchar(10) DEFAULT NULL,
+  `post_user_fk` char(32) NOT NULL,
   `post_message` varchar(280) NOT NULL,
   `post_total_likes` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
   `post_image_path` varchar(255) NOT NULL,
@@ -204,6 +200,7 @@ CREATE TABLE `posts` (
 --
 
 INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`) VALUES
+('83a69b7b2b32475e9bf2d155e32557d3', 'u008', '', 0, 'uploads/babymad.jpeg', '2025-11-28 09:53:45'),
 ('p001', 'u002', 'Hello world!', 0, 'post_1.jpg', '2025-11-27 13:01:44'),
 ('p002', 'u002', 'My first post', 0, '', '2025-11-27 13:01:44'),
 ('p003', 'u003', 'Testing posts', 0, 'post_2.jpg', '2025-11-27 13:01:44'),
@@ -264,7 +261,7 @@ INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, 
 ('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', '', 'avatar_5.jpg', '', 1700002000, 'user'),
 ('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', '', 'avatar_6.jpg', 'key789', 0, 'user'),
 ('u007', 'test@example.com', 'hash', 'testuser', 'Test', 'User', 'avatar.jpg', '', 1764249116, 'user'),
-('u008', 'sophieteinvigkjer@gmail.com', 'pbkdf2:sha256:260000$2FDxPGYcRRNWpA9PAZk9yb$3fcacdb39049a56e20d8c4e0563192812d00a6c02bdb5f92b315a60b63ba3267', 'sophie', 'Sophie', 'Teinvig Kjer', 'https://avatar.iran.liara.run/public/40', '\"\"', 1, 'user'),
+('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$yVTjgdfffRT32az3$702fae15648ac053be5d381bb2d55f877ce1ad7e51c3d4af7c1fdbd97d8c0ba0f8bfee9e523241a284c70dd69ddb056845b1e17d17b2089e10bc1718cacf162d', 'sophie', 'Sophie', 'Teinvig Kjer', 'https://avatar.iran.liara.run/public/40', '', 1764323341, 'user'),
 ('u999', 'admin@example.com', 'scrypt:hashAdmin', 'admin', 'Super', 'Admin', 'avatar_admin.jpg', '', 1700000000, 'admin');
 
 -- --------------------------------------------------------
@@ -287,7 +284,8 @@ CREATE TABLE `user_post_counts` (
 --
 ALTER TABLE `admin`
   ADD PRIMARY KEY (`admin_pk`),
-  ADD UNIQUE KEY `admin_email` (`admin_email`);
+  ADD UNIQUE KEY `admin_email` (`admin_email`),
+  ADD UNIQUE KEY `unique_admin_email` (`admin_email`);
 
 --
 -- Indeks for tabel `comments`
@@ -310,14 +308,15 @@ ALTER TABLE `follows`
 --
 ALTER TABLE `languages`
   ADD PRIMARY KEY (`language_pk`),
-  ADD UNIQUE KEY `language_code` (`language_code`);
+  ADD UNIQUE KEY `language_code` (`language_code`),
+  ADD UNIQUE KEY `unique_language_code` (`language_code`);
 
 --
 -- Indeks for tabel `likes`
 --
 ALTER TABLE `likes`
   ADD PRIMARY KEY (`like_pk`),
-  ADD UNIQUE KEY `unique_like` (`like_post_fk`,`like_user_fk`),
+  ADD UNIQUE KEY `unique_like` (`like_user_fk`,`like_post_fk`),
   ADD KEY `idx_like_post_fk` (`like_post_fk`),
   ADD KEY `idx_like_user_fk` (`like_user_fk`);
 
@@ -342,7 +341,12 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`user_pk`),
   ADD UNIQUE KEY `user_email` (`user_email`),
   ADD UNIQUE KEY `user_username` (`user_username`),
-  ADD KEY `idx_verified_at` (`user_verified_at`);
+  ADD UNIQUE KEY `user_email_3` (`user_email`),
+  ADD UNIQUE KEY `user_email_4` (`user_email`),
+  ADD UNIQUE KEY `user_email_5` (`user_email`),
+  ADD UNIQUE KEY `user_username_2` (`user_username`),
+  ADD KEY `idx_verified_at` (`user_verified_at`),
+  ADD KEY `user_email_2` (`user_email`);
 
 -- --------------------------------------------------------
 
@@ -370,6 +374,8 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `user_po
 -- Begrænsninger for tabel `comments`
 --
 ALTER TABLE `comments`
+  ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`comment_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`comment_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`comment_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE;
 
 --
@@ -382,7 +388,7 @@ ALTER TABLE `likes`
 -- Begrænsninger for tabel `posts`
 --
 ALTER TABLE `posts`
-  ADD CONSTRAINT `fk_posts_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_post_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

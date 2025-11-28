@@ -82,7 +82,6 @@ def _____USER_____(): pass
 ##############################
 ##############################
 
-
 @app.get("/")
 def view_index():
    
@@ -139,7 +138,6 @@ def admin_login(lan="english"):
             if "cursor" in locals(): cursor.close()
             if "db" in locals(): db.close()
 
-
 ##############################
 @app.get("/admin")
 @x.no_cache
@@ -171,7 +169,6 @@ def admin():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 #####################################
 @app.post("/admin/block_user/<user_pk>")
@@ -231,13 +228,11 @@ def block_post(post_pk):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
 #############################
 @app.get("/admin_logout")
 def admin_logout():
     session.pop("admin", None)
     return redirect(url_for("admin_login"))
-
 
 ################################
 @app.route("/login", methods=["GET", "POST"])
@@ -385,8 +380,6 @@ def signup(lan):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
-
 # VERIFY ACCOUNT #############################
 @app.route("/verify-account", methods=["GET"])
 def verify_account():
@@ -411,7 +404,6 @@ def verify_account():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 # HOME #############################
 @app.get("/home")
@@ -444,9 +436,6 @@ def home():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
-
-
 ##############################
 @app.get("/logout")
 def logout():
@@ -460,32 +449,6 @@ def logout():
         pass
 
 # HOME COMP #############################
-# @app.get("/home-comp")
-# def home_comp():
-#     try:
-
-#         user = session.get("user", "")
-#         if not user: return "error"
-#         db, cursor = x.db()
-#         q = "SELECT * FROM users JOIN posts ON user_pk = post_user_fk ORDER BY RAND() LIMIT 5"
-#         cursor.execute(q)
-#         tweets = cursor.fetchall()
-
-#         for tweet in tweets:
-#             q_comments = "SELECT comment_text, user_first_name, user_last_name FROM comments JOIN users ON user_pk = user_fk WHERE post_fk = %s ORDER BY comment_created_at ASC"
-#             cursor.execute(q_comments, (tweet["post_pk"],))
-#             tweet["comments"] = cursor.fetchall()
-
-#         ic(tweets[0])
-
-#         html = render_template("_home_comp.html", tweets=tweets, user=user)
-#         return f"""<mixhtml mix-update="main">{ html }</mixhtml>"""
-#     except Exception as ex:
-#         ic(ex)
-#         return "error"
-#     finally:
-#         pass
-
 @app.get("/home-comp")
 def home_comp():
     try:
@@ -505,7 +468,6 @@ def home_comp():
         return "error"
     finally:
         pass
-
 
 # PROFILE #############################
 @app.get("/profile")
@@ -629,8 +591,6 @@ def api_create_post():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
-
 # API UPDATE POST ################################
 @app.route("/api-update-post/<post_pk>", methods=["POST"])
 def api_update_post(post_pk):
@@ -678,7 +638,6 @@ def api_update_post(post_pk):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
 # API DELETE POST #############################
 @app.route("/api-delete-post/<post_pk>", methods=["POST"])
 def api_delete_post(post_pk):
@@ -711,7 +670,6 @@ def api_delete_post(post_pk):
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 # API CREATE POST #############################
 @app.route("/api-create-comment/<post_fk>", methods=["POST"])
@@ -770,7 +728,6 @@ def api_create_comment(post_fk):
 def api_update_profile():
 
     try:
-
         user = session.get("user", "")
         if not user: return "invalid user"
 
@@ -816,7 +773,6 @@ def api_update_profile():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
 # API SEARCH #############################
 @app.post("/api-search")
 def api_search():
@@ -855,7 +811,6 @@ def api_search():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 ##############################
 @app.get("/get-data-from-sheet")
@@ -907,7 +862,6 @@ def get_data_from_sheet():
     finally:
         pass
 
-
 # Example route
 @app.route("/", endpoint="home_page")
 def home():  # Function can keep the same name
@@ -916,7 +870,7 @@ def home():  # Function can keep the same name
 if __name__ == "__main__":
     app.run(debug=True)
 
-# API FOLLOW ###########################
+# api-follow
 @app.route("/api-follow", methods=["POST"])
 def api_follow():
     user = session.get("user")
@@ -929,7 +883,6 @@ def api_follow():
 
     try:
         db, cursor = x.db()
-
         # Prevent duplicates
         cursor.execute(
             "SELECT 1 FROM follows WHERE follow_follower_fk=%s AND follow_following_fk=%s LIMIT 1",
@@ -939,27 +892,21 @@ def api_follow():
             return jsonify({"success": True})  # Already following
 
         follow_pk = uuid.uuid4().hex
-
-        # Insert follow
         cursor.execute(
             "INSERT INTO follows (follow_pk, follow_follower_fk, follow_following_fk) VALUES (%s, %s, %s)",
             (follow_pk, user["user_pk"], following_pk)
         )
-
         db.commit()
         return jsonify({"success": True})
-
     except Exception as e:
         if "db" in locals(): db.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
-
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
 
-
-# API UNFOLLOW ###########################
+# api-unfollow
 @app.route("/api-unfollow", methods=["POST"])
 def api_unfollow():
     user = session.get("user")
@@ -972,22 +919,19 @@ def api_unfollow():
 
     try:
         db, cursor = x.db()
-
         cursor.execute(
             "DELETE FROM follows WHERE follow_follower_fk=%s AND follow_following_fk=%s",
             (user["user_pk"], following_pk)
         )
-
         db.commit()
         return jsonify({"success": True})
-
     except Exception as e:
         if "db" in locals(): db.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
-
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
 
 # DELETE USER
 @app.post("/delete-user")
