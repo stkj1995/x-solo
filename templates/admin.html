@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+<p>Logged in as: {{ admin.admin_email }}</p>
+<a href="/admin_logout">Logout</a>
+
+<h2>Users</h2>
+<table>
+<tr><th>ID</th><th>Email</th><th>Blocked</th><th>Actions</th></tr>
+{% for u in users %}
+<tr>
+<td>{{ u.user_pk }}</td>
+<td>{{ u.user_email }}</td>
+<td>{{ 'Yes' if u.user_blocked else 'No' }}</td>
+<td>
+<form action="/admin/block_user/{{ u.user_pk }}" method="post">
+<button type="submit">{{ 'Unblock' if u.user_blocked else 'Block' }}</button>
+</form>
+</td>
+</tr>
+{% endfor %}
+</table>
+
+<h2>Posts</h2>
+<table>
+<tr><th>ID</th><th>User</th><th>Blocked</th><th>Actions</th></tr>
+{% for p in posts %}
+<tr>
+<td>{{ p.post_pk }}</td>
+<td>{{ p.user_fk }}</td>
+<td>{{ 'Yes' if p.post_blocked else 'No' }}</td>
+<td>
+<form action="/admin/block_post/{{ p.post_pk }}" method="post">
+<button type="submit">{{ 'Unblock' if p.post_blocked else 'Block' }}</button>
+</form>
+</td>
+</tr>
+{% endfor %}
+</table>
+
+<h2>Languages</h2>
+<ul>
+{% for lang in languages %}
+<li>{{ lang }}</li>
+{% endfor %}
+</ul>
+{% endblock %}

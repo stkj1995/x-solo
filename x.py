@@ -237,15 +237,19 @@ def validate_user_first_name(lan="english"):
 
 
 ##############################
-def validate_user_password_confirm():
-    user_password = request.form.get("user_password_confirm", "").strip()
-    if not re.match(REGEX_USER_PASSWORD, user_password): raise Exception("Twitter exception - Invalid confirm password", 400)
-    return user_password
+def validate_admin_email(lan):
+    admin_email = request.form.get("admin_email", "").strip()
+    if not admin_email:
+        raise Exception(dictionary.email_invalid[lan], 400)
+    return admin_email
 
-def validate_admin_password_confirm():
-    admin_password = request.form.get("admin_password_confirm", "").strip()
-    if not re.match(REGEX_USER_PASSWORD, admin_password): raise Exception("Twitter exception - Invalid confirm password", 400)
+
+def validate_admin_password(lan):
+    admin_password = request.form.get("admin_password", "").strip()
+    if len(admin_password) < 3:
+        raise Exception(dictionary.password_invalid[lan], 400)
     return admin_password
+
 
 ##############################
 def send_email(to_email, subject, template):

@@ -74,7 +74,151 @@ def global_variables():
     )
 
 ##############################
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/admin_login", methods=["GET", "POST"])
+@app.route("/admin_login/<lan>", methods=["GET", "POST"])
+@x.no_cache
+def admin_login(lan="english"):
+    if lan not in x.allowed_languages: lan = "english"
+    x.default_language = lan
+
+    if request.method == "GET":
+        if session.get("admin", ""):
+            return redirect(url_for("admin"))
+        return render_template("admin_login.html", lan=lan)
+
+    if request.method == "POST":
+        try:
+            admin_email = x.validate_admin_email(lan)
+            admin_password = x.validate_admin_password(lan)
+
+            db, cursor = x.db()
+            q = "SELECT * FROM admin WHERE admin_email=%s AND admin_password=%s"
+            cursor.execute(q, (admin_email, admin_password))
+            admin = cursor.fetchone()
+
+            if not admin:
+                raise Exception(x.lans("admin_not_found", lan), 400)
+
+            admin.pop("admin_password")
+            session["admin"] = admin
+
+            return """<browser mix-redirect="/admin"></browser>"""
+
+        except Exception as ex:
+            ic(ex)
+            if len(ex.args) > 1 and ex.args[1] == 400:
+                toast_error = render_template("___toast_error.html", message=ex.args[0])
+                return f"""<browser mix-update="#toast">{toast_error}</browser>""", 400
+            toast_error = render_template("___toast_error.html", message=x.lans("system_maintenance", lan))
+            return f"""<browser mix-update="#toast">{toast_error}</browser>""", 500
+
+        finally:
+            if "cursor" in locals(): cursor.close()
+            if "db" in locals(): db.close()
+
+
+##############################
+@app.get("/admin")
+@x.no_cache
+def admin():
+    try:
+        admin = session.get("admin", "")
+        if not admin:
+            return redirect(url_for("admin_login"))
+
+        db, cursor = x.db()
+
+        # Alle brugere
+        cursor.execute("SELECT * FROM users ORDER BY user_pk")
+        users = cursor.fetchall()
+
+        # Alle posts
+        cursor.execute("SELECT * FROM posts ORDER BY post_pk")
+        posts = cursor.fetchall()
+
+        # Languages fra x.py
+        languages = x.allowed_languages
+
+        return render_template("admin.html", admin=admin, users=users, posts=posts, languages=languages)
+
+    except Exception as ex:
+        ic(ex)
+        return "error"
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
+#####################################
+@app.post("/admin/block_user/<user_pk>")
+def block_user(user_pk):
+    try:
+        admin = session.get("admin")
+        if not admin: return redirect(url_for("admin_login"))
+
+        db, cursor = x.db()
+        cursor.execute("SELECT user_blocked, user_email FROM users WHERE user_pk=%s", (user_pk,))
+        row = cursor.fetchone()
+        if not row: return "User not found", 404
+
+        new_status = 0 if row["user_blocked"] else 1
+        cursor.execute("UPDATE users SET user_blocked=%s WHERE user_pk=%s", (new_status, user_pk))
+        db.commit()
+
+        # Send email notification
+        subject = x.lans("account_status_updated")
+        message = f"Your account has been {'unblocked' if new_status==0 else 'blocked'} by the administrator."
+        x.send_email(row["user_email"], subject, message)
+
+        return redirect(url_for("admin"))
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+###############################
+@app.post("/admin/block_post/<post_pk>")
+def block_post(post_pk):
+    try:
+        admin = session.get("admin")
+        if not admin: return redirect(url_for("admin_login"))
+
+        db, cursor = x.db()
+        cursor.execute("""
+            SELECT post_blocked, users.user_email 
+            FROM posts JOIN users ON posts.user_fk = users.user_pk 
+            WHERE post_pk=%s
+        """, (post_pk,))
+        row = cursor.fetchone()
+        if not row: return "Post not found", 404
+
+        new_status = 0 if row["post_blocked"] else 1
+        cursor.execute("UPDATE posts SET post_blocked=%s WHERE post_pk=%s", (new_status, post_pk))
+        db.commit()
+
+        # Send email notification
+        subject = x.lans("post_status_updated")
+        message = f"Your post has been {'unblocked' if new_status==0 else 'blocked'} by the administrator."
+        x.send_email(row["user_email"], subject, message)
+
+        return redirect(url_for("admin"))
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
+#############################
+@app.get("/admin_logout")
+def admin_logout():
+    session.pop("admin", None)
+    return redirect(url_for("admin_login"))
+
+
+
+##############################
+app.route("/login", methods=["GET", "POST"])
 @app.route("/login/<lan>", methods=["GET", "POST"])
 @x.no_cache
 def login(lan = "english"):
@@ -88,13 +232,9 @@ def login(lan = "english"):
 
     if request.method == "POST":
         try:
-            if request.method == "POST":
-                user_password = request.form["user_password"]
             # Validate           
-            ic(request.form)  # Se hvad der faktisk bliver sendt
             user_email = x.validate_user_email(lan)
             user_password = x.validate_user_password(lan)
-            ic(user_email, user_password)
             # Connect to the database
             q = "SELECT * FROM users WHERE user_email = %s"
             db, cursor = x.db()
@@ -105,17 +245,13 @@ def login(lan = "english"):
             if not check_password_hash(user["user_password"], user_password):
                 raise Exception(dictionary.invalid_credentials[lan], 400)
 
-            # if user["user_verification_key"] != "":
-            #     raise Exception(dictionary.user_not_verified[lan], 400)
-            
-            ic("user_verification_key:", user["user_verification_key"])
+            if user["user_verification_key"] != "":
+                raise Exception(dictionary.user_not_verified[lan], 400)
 
             user.pop("user_password")
 
             session["user"] = user
-            ic(user)
-            ic(request.form)
-            return f"""<browser mix-redirect="/home"></browser>""", 200
+            return f"""<browser mix-redirect="/home"></browser>"""
 
         except Exception as ex:
             ic(ex)
@@ -134,70 +270,94 @@ def login(lan = "english"):
             if "db" in locals(): db.close()
 
 
+
+
 ##############################
 @app.route("/signup", methods=["GET", "POST"])
 @app.route("/signup/<lan>", methods=["GET", "POST"])
-def signup(lan = "english"):
+def signup(lan="english"):
 
-    if lan not in x.allowed_languages: lan = "english"
+    # Language handling
+    if lan not in x.allowed_languages:
+        lan = "english"
     x.default_language = lan
 
+    # GET = show signup page
     if request.method == "GET":
         return render_template("signup.html", lan=lan)
 
-    if request.method == "POST":
-        try:
-            # Validate
-            user_email = x.validate_user_email()
-            user_password = x.validate_user_password()
-            user_username = x.validate_user_username()
-            user_first_name = x.validate_user_first_name()
+    # POST = process signup
+    try:
+        # 1. Validate user inputs
+        user_email = x.validate_user_email()
+        user_password = x.validate_user_password()
+        user_username = x.validate_user_username()
+        user_first_name = x.validate_user_first_name()
 
-            user_pk = uuid.uuid4().hex
-            user_last_name = ""
-            user_avatar_path = "https://avatar.iran.liara.run/public/40"
-            user_verification_key = uuid.uuid4().hex
-            user_verified_at = 0
+        # 2. Create user data
+        user_pk = uuid.uuid4().hex
+        user_last_name = ""
+        user_avatar_path = "https://avatar.iran.liara.run/public/40"
+        user_verification_key = uuid.uuid4().hex
+        user_verified_at = 0
+        user_hashed_password = generate_password_hash(user_password)
 
-            user_hashed_password = generate_password_hash(user_password)
+        # 3. Insert into database
+        q = """INSERT INTO users 
+        (user_pk, user_email, user_password, user_username, user_first_name,
+         user_last_name, user_avatar_path, user_verification_key, user_verified_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
 
-            # Connect to the database
-            q = "INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            db, cursor = x.db()
-            cursor.execute(q, (user_pk, user_email, user_hashed_password, user_username, 
-            user_first_name, user_last_name, user_avatar_path, user_verification_key, user_verified_at))
-            db.commit()
-            q = "INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        db, cursor = x.db()
+        cursor.execute(q, (
+            user_pk, user_email, user_hashed_password,
+            user_username, user_first_name, user_last_name,
+            user_avatar_path, user_verification_key, user_verified_at
+        ))
+        db.commit()
 
-            # send verification email
-            email_verify_account = render_template("_email_verify_account.html", user_verification_key=user_verification_key)
-            ic(email_verify_account)
-            # x.send_email(user_email, "Verify your account", email_verify_account)
+        # 4. Send verification email
+        email_html = render_template(
+            "_email_verify_account.html",
+            user_verification_key=user_verification_key
+        )
+        x.send_email(user_email, "Verify your account", email_html)
 
-            return f"""<mixhtml mix-redirect="{ url_for('login') }"></mixhtml>""", 200
+        # 5. Redirect to login with MixHTML
+        return f"""<mixhtml mix-redirect="{url_for('login')}"></mixhtml>""", 200
 
-        except Exception as ex:
-            ic(ex)
-            # User errors
-            if ex.args[1] == 400:
-                toast_error = render_template("___toast_error.html", message=ex.args[0])
-                return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
-            
-            # Database errors
-            if "Duplicate entry" and user_email in str(ex): 
-                toast_error = render_template("___toast_error.html", message="Email already registered")
-                return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
-            if "Duplicate entry" and user_username in str(ex): 
-                toast_error = render_template("___toast_error.html", message="Username already registered")
-                return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
-            
-            # System or developer error
-            toast_error = render_template("___toast_error.html", message="System under maintenance")
-            return f"""<mixhtml mix-bottom="#toast">{ toast_error }</mixhtml>""", 500
+    # Error handling
+    except Exception as ex:
+        ic(ex)
 
-        finally:
-            if "cursor" in locals(): cursor.close()
-            if "db" in locals(): db.close()
+        # USER ERRORS (validation)
+        if len(ex.args) > 1 and ex.args[1] == 400:
+            toast = render_template("___toast_error.html", message=ex.args[0])
+            return f"""<mixhtml mix-update="#toast">{toast}</mixhtml>""", 400
+
+        # DATABASE ERRORS (duplicate email or username)
+        error_message = str(ex)
+
+        if "Duplicate entry" in error_message:
+            if user_email in error_message:
+                msg = "Email already registered"
+            elif user_username in error_message:
+                msg = "Username already registered"
+            else:
+                msg = "Account already exists"
+
+            toast = render_template("___toast_error.html", message=msg)
+            return f"""<mixhtml mix-update='#toast'>{toast}</mixhtml>""", 400
+
+        # SYSTEM ERROR
+        toast = render_template("___toast_error.html", message="System error. Try again later.")
+        return f"""<mixhtml mix-bottom='#toast'>{toast}</mixhtml>""", 500
+
+    # Always close DB
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 
 # VERIFY ACCOUNT #############################
@@ -273,6 +433,32 @@ def logout():
         pass
 
 # HOME COMP #############################
+# @app.get("/home-comp")
+# def home_comp():
+#     try:
+
+#         user = session.get("user", "")
+#         if not user: return "error"
+#         db, cursor = x.db()
+#         q = "SELECT * FROM users JOIN posts ON user_pk = post_user_fk ORDER BY RAND() LIMIT 5"
+#         cursor.execute(q)
+#         tweets = cursor.fetchall()
+
+#         for tweet in tweets:
+#             q_comments = "SELECT comment_text, user_first_name, user_last_name FROM comments JOIN users ON user_pk = user_fk WHERE post_fk = %s ORDER BY comment_created_at ASC"
+#             cursor.execute(q_comments, (tweet["post_pk"],))
+#             tweet["comments"] = cursor.fetchall()
+
+#         ic(tweets[0])
+
+#         html = render_template("_home_comp.html", tweets=tweets, user=user)
+#         return f"""<mixhtml mix-update="main">{ html }</mixhtml>"""
+#     except Exception as ex:
+#         ic(ex)
+#         return "error"
+#     finally:
+#         pass
+
 @app.get("/home-comp")
 def home_comp():
     try:
@@ -283,22 +469,16 @@ def home_comp():
         q = "SELECT * FROM users JOIN posts ON user_pk = post_user_fk ORDER BY RAND() LIMIT 5"
         cursor.execute(q)
         tweets = cursor.fetchall()
+        ic(tweets)
 
-        # attach comments to each post
-        for tweet in tweets:
-            q_comments = "SELECT comment_text, user_first_name, user_last_name FROM comments JOIN users ON user_pk = user_fk WHERE post_fk = %s ORDER BY comment_created_at ASC"
-            cursor.execute(q_comments, (tweet["post_pk"],))
-            tweet["comments"] = cursor.fetchall()
-
-        ic(tweets[0])
-
-        html = render_template("_home_comp.html", tweets=tweets, user=user)
+        html = render_template("_home_comp.html", tweets=tweets)
         return f"""<mixhtml mix-update="main">{ html }</mixhtml>"""
     except Exception as ex:
         ic(ex)
         return "error"
     finally:
         pass
+
 
 # PROFILE #############################
 @app.get("/profile")
@@ -781,3 +961,45 @@ def api_unfollow():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+# DELETE USER
+@app.post("/delete-user")
+def delete_user():
+    user_pk = request.form.get("user_pk")
+
+    # Validate user ID
+    if not user_pk or not user_pk.isdigit():
+        return "Invalid user ID", 400
+
+    db, cursor = x.db()
+
+    try:
+        # Fetch avatar path
+        cursor.execute(
+            "SELECT user_avatar_path FROM users WHERE user_pk = %s",
+            (user_pk,)
+        )
+        row = cursor.fetchone()
+
+        # Delete user avatar file if it exists
+        if row:
+            avatar_path = row.get("user_avatar_path")
+            if avatar_path:
+                full_path = os.path.join("static", avatar_path)
+                if os.path.isfile(full_path):
+                    os.remove(full_path)
+
+        # Delete user from DB
+        cursor.execute("DELETE FROM users WHERE user_pk = %s", (user_pk,))
+        db.commit()
+
+        return redirect(url_for("home"))
+
+    except Exception as ex:
+        db.rollback()
+        print("Error deleting user:", ex)
+        return "An error occurred while deleting the user", 500
+
+    finally:
+        cursor.close()
+        db.close()
