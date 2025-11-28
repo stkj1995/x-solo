@@ -64,8 +64,6 @@ def lans(key, lang=None):
 
 
 #####################################
-import mysql.connector
-
 def db():
     try:
         # Use the container name and internal MariaDB port
@@ -73,7 +71,7 @@ def db():
             host="x_mariadb0",  # Docker container name
             port=3306,          # Internal MariaDB port
             user="root",        # Make sure this matches your MariaDB root user
-            password="root",    # Replace with the actual root password
+            password="password",    # Replace with the actual root password
             database="x"        # Your database name
         )
         cursor = db.cursor(dictionary=True)

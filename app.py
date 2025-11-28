@@ -217,17 +217,18 @@ def admin_logout():
 
 
 
-##############################
-app.route("/login", methods=["GET", "POST"])
+###############################
+@app.route("/login", defaults={'lan': 'english'}, methods=["GET", "POST"])
 @app.route("/login/<lan>", methods=["GET", "POST"])
 @x.no_cache
-def login(lan = "english"):
-
-    if lan not in x.allowed_languages: lan = "english"
+def login(lan):
+    if lan not in x.allowed_languages:
+        lan = "english"
     x.default_language = lan
 
     if request.method == "GET":
-        if session.get("user", ""): return redirect(url_for("home"))
+        if session.get("user", ""):
+            return redirect(url_for("home"))
         return render_template("login.html", lan=lan)
 
     if request.method == "POST":
@@ -240,7 +241,8 @@ def login(lan = "english"):
             db, cursor = x.db()
             cursor.execute(q, (user_email,))
             user = cursor.fetchone()
-            if not user: raise Exception(dictionary.user_not_found[lan], 400)
+            if not user:
+                raise Exception(dictionary.user_not_found[lan], 400)
 
             if not check_password_hash(user["user_password"], user_password):
                 raise Exception(dictionary.invalid_credentials[lan], 400)
@@ -249,13 +251,11 @@ def login(lan = "english"):
                 raise Exception(dictionary.user_not_verified[lan], 400)
 
             user.pop("user_password")
-
             session["user"] = user
             return f"""<browser mix-redirect="/home"></browser>"""
 
         except Exception as ex:
             ic(ex)
-
             # User errors
             if ex.args[1] == 400:
                 toast_error = render_template("___toast_error.html", message=ex.args[0])
@@ -270,13 +270,10 @@ def login(lan = "english"):
             if "db" in locals(): db.close()
 
 
-
-
-##############################
-@app.route("/signup", methods=["GET", "POST"])
+############################
+@app.route("/signup", defaults={'lan': 'english'}, methods=["GET", "POST"])
 @app.route("/signup/<lan>", methods=["GET", "POST"])
-def signup(lan="english"):
-
+def signup(lan):
     # Language handling
     if lan not in x.allowed_languages:
         lan = "english"
@@ -338,7 +335,6 @@ def signup(lan="english"):
 
         # DATABASE ERRORS (duplicate email or username)
         error_message = str(ex)
-
         if "Duplicate entry" in error_message:
             if user_email in error_message:
                 msg = "Email already registered"
@@ -346,7 +342,6 @@ def signup(lan="english"):
                 msg = "Username already registered"
             else:
                 msg = "Account already exists"
-
             toast = render_template("___toast_error.html", message=msg)
             return f"""<mixhtml mix-update='#toast'>{toast}</mixhtml>""", 400
 
