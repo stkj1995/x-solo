@@ -27,7 +27,14 @@ UPLOAD_ITEM_FOLDER = './images'
 # Multilanguage / Google Sheets setup
 allowed_languages = ["english", "danish", "spanish"]
 default_language = "english"
-google_spread_sheet_key = "YOUR_SPREADSHEET_KEY"  # placeholder
+google_spread_sheet_key = "1TwU2j9Q32xUBA89Gb2iTeHdTAP7r3qAnoFZDUVtUmvo"  # placeholder
+
+# Mapping between database language_code and allowed_languages
+language_map = {
+    'en': 'english',
+    'da': 'danish',
+    'es': 'spanish'
+}
 
 # For exam / local testing: do not expose real service account
 # If you want to test without Google Sheets, just load a local dictionary
@@ -57,8 +64,18 @@ except Exception as e:
         dictionary = json.load(f)
 
 # Function to get translation
-def lans(key, lang=None):
-    lang = lang if lang in allowed_languages else default_language
+# def lans(key, lang=None):
+#     lang = lang if lang in allowed_languages else default_language
+#     return dictionary.get(key, {}).get(lang, key)
+
+# Function to get translation using language code from DB
+def lans(key, db_lang_code=None):
+    """
+    key: tekstnøgle fra dictionary
+    db_lang_code: sprogkode fra database ('en', 'da', 'es')
+    """
+    # Map DB language code to allowed_languages, fallback to default_language
+    lang = language_map.get(db_lang_code, default_language)
     return dictionary.get(key, {}).get(lang, key)
 
 
@@ -78,6 +95,7 @@ def db():
     except Exception as e:
         print(e, flush=True)
         raise Exception("Database under maintenance", 500)
+    
 
 ##############################
 def no_cache(view):
