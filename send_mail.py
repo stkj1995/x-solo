@@ -12,7 +12,7 @@ def send_verify_email(to_email, user_verification_key):
 
         # Email and password of the sender's Gmail account
         sender_email = "soph1155@stud.ek.dk"
-        password = "tsmm iisu acbv zppl"  # If 2FA is on, use an App Password instead
+        password = "tsmmiisuacbvzppl"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = to_email

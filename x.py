@@ -81,7 +81,7 @@ def db():
     except Exception as e:
         print(e, flush=True)
         raise Exception("Database under maintenance", 500)
-
+    
 
 ##############################
 def no_cache(view):
@@ -153,7 +153,7 @@ def validate_user_password_confirm():
 
 
 ##############################
-REGEX_UUID4 = "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+REGEX_UUID4 = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 def validate_uuid4(uuid4 = ""):
     if not uuid4:
         uuid4 = request.values.get("uuid4", "").strip()
@@ -162,7 +162,7 @@ def validate_uuid4(uuid4 = ""):
 
 
 ##############################
-REGEX_UUID4_WITHOUT_DASHES = "^[0-9a-f]{8}[0-9a-f]{4}4[0-9a-f]{3}[89ab][0-9a-f]{3}[0-9a-f]{12}$"
+REGEX_UUID4_WITHOUT_DASHES = r"^[0-9a-f]{8}[0-9a-f]{4}4[0-9a-f]{3}[89ab][0-9a-f]{3}[0-9a-f]{12}$"
 def validate_uuid4_without_dashes(uuid4 = ""):
     error = "Invalid uuid4 without dashes"
     if not uuid4: raise Exception(error, 400)
@@ -237,6 +237,17 @@ def validate_user_first_name(lan="english"):
 
 
 ##############################
+def validate_user_password_confirm():
+    user_password = request.form.get("user_password_confirm", "").strip()
+    if not re.match(REGEX_USER_PASSWORD, user_password): raise Exception("Twitter exception - Invalid confirm password", 400)
+    return user_password
+
+def validate_admin_password_confirm():
+    admin_password = request.form.get("admin_password_confirm", "").strip()
+    if not re.match(REGEX_USER_PASSWORD, admin_password): raise Exception("Twitter exception - Invalid confirm password", 400)
+    return admin_password
+
+##############################
 def send_email(to_email, subject, template):
     try:
         # Create a gmail fullflaskdemomail
@@ -246,7 +257,7 @@ def send_email(to_email, subject, template):
 
         # Email and password of the sender's Gmail account
         sender_email = "sophieteinvigkjer@gmail.com"
-        password = "tsmm iisu acbv zppl"  # If 2FA is on, use an App Password instead
+        password = "tsmmiisuacbvzppl"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = to_email
