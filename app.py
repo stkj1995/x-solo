@@ -883,6 +883,7 @@ def api_follow():
 
     try:
         db, cursor = x.db()
+
         # Prevent duplicates
         cursor.execute(
             "SELECT 1 FROM follows WHERE follow_follower_fk=%s AND follow_following_fk=%s LIMIT 1",
@@ -898,6 +899,7 @@ def api_follow():
         )
         db.commit()
         return jsonify({"success": True})
+
     except Exception as e:
         if "db" in locals(): db.rollback()
         return jsonify({"success": False, "error": str(e)}), 500

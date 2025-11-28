@@ -164,13 +164,13 @@ function get_search_results(url, method, data_source_selector, function_after_fe
 
 // ##############################
 document.addEventListener("DOMContentLoaded", () => {
-    // Event delegation for dynamic buttons
+    // Event delegation for dynamic content
     document.body.addEventListener("click", async (e) => {
         const button = e.target.closest(".follow-btn");
         if (!button) return;
 
         const user_pk = button.dataset.user;
-        let action = button.dataset.action; // "follow" or "unfollow"
+        const action = button.textContent.trim().toLowerCase() === "follow" ? "follow" : "unfollow";
 
         const formData = new FormData();
         formData.append("following_pk", user_pk);
@@ -179,11 +179,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(`/api-${action}`, {
                 method: "POST",
                 body: formData,
-                credentials: "same-origin", // send session cookie
+                credentials: "same-origin", // sends session cookie
             });
             const data = await res.json();
 
             if (data.success) {
+                // Toggle button text and color
                 if (action === "follow") {
                     button.textContent = "Unfollow";
                     button.dataset.action = "unfollow";
@@ -195,17 +196,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     button.classList.remove("bg-c-gray-500");
                     button.classList.add("bg-c-black");
                 }
-                console.log(`Follow toggled: ${action} -> ${button.textContent}`);
             } else {
                 console.error("Server error:", data.error);
                 alert("Error: " + data.error);
             }
         } catch (err) {
             console.error("Fetch error:", err);
+            alert("Could not toggle follow. Check console.");
         }
     });
 });
-
 
 // ##############################
 burger.addEventListener("click", () => {
