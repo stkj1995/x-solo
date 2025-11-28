@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 27. 11 2025 kl. 21:20:05
+-- Genereringstid: 28. 11 2025 kl. 09:40:15
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -36,6 +36,22 @@ CREATE DEFINER=`root`@`%` PROCEDURE `follow_user` (IN `followerID` CHAR(32), IN 
 END$$
 
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Struktur-dump for tabellen `admin`
+--
+
+CREATE TABLE `admin` (
+  `admin_pk` char(32) NOT NULL,
+  `admin_email` varchar(255) NOT NULL,
+  `admin_password` varchar(255) NOT NULL,
+  `admin_first_name` varchar(100) NOT NULL,
+  `admin_last_name` varchar(100) NOT NULL,
+  `admin_role` varchar(50) DEFAULT 'superadmin',
+  `admin_created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -265,6 +281,13 @@ CREATE TABLE `user_post_counts` (
 --
 -- Begrænsninger for dumpede tabeller
 --
+
+--
+-- Indeks for tabel `admin`
+--
+ALTER TABLE `admin`
+  ADD PRIMARY KEY (`admin_pk`),
+  ADD UNIQUE KEY `admin_email` (`admin_email`);
 
 --
 -- Indeks for tabel `comments`

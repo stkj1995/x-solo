@@ -66,20 +66,18 @@ def lans(key, lang=None):
 #####################################
 def db():
     try:
-        # Use the container name and internal MariaDB port
         db = mysql.connector.connect(
-            host="x_mariadb0",  # Docker container name
-            port=3306,          # Internal MariaDB port
-            user="root",        # Make sure this matches your MariaDB root user
-            password="password",    # Replace with the actual root password
-            database="x"        # Your database name
+            host="mariadb",        # Docker Compose service name
+            port=3306,
+            user="root",
+            password="password",   # matches your docker-compose env
+            database="x"
         )
         cursor = db.cursor(dictionary=True)
         return db, cursor
     except Exception as e:
         print(e, flush=True)
         raise Exception("Database under maintenance", 500)
-    
 
 ##############################
 def no_cache(view):
