@@ -164,13 +164,13 @@ function get_search_results(url, method, data_source_selector, function_after_fe
 
 // ##############################
 document.addEventListener("DOMContentLoaded", () => {
-    // Event delegation for dynamic content
     document.body.addEventListener("click", async (e) => {
         const button = e.target.closest(".follow-btn");
         if (!button) return;
 
         const user_pk = button.dataset.user;
-        const action = button.textContent.trim().toLowerCase() === "follow" ? "follow" : "unfollow";
+        // Use data-action attribute instead of textContent
+        let action = button.dataset.action || (button.textContent.trim().toLowerCase() === "follow" ? "follow" : "unfollow");
 
         const formData = new FormData();
         formData.append("following_pk", user_pk);
@@ -179,23 +179,24 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(`/api-${action}`, {
                 method: "POST",
                 body: formData,
-                credentials: "same-origin", // sends session cookie
+                credentials: "same-origin",
             });
+
             const data = await res.json();
 
             if (data.success) {
-                // Toggle button text and color
                 if (action === "follow") {
                     button.textContent = "Unfollow";
-                    button.dataset.action = "unfollow";
+                    button.dataset.action = "unfollow"; // update for next click
                     button.classList.remove("bg-c-black");
                     button.classList.add("bg-c-gray-500");
                 } else {
                     button.textContent = "Follow";
-                    button.dataset.action = "follow";
+                    button.dataset.action = "follow"; // update for next click
                     button.classList.remove("bg-c-gray-500");
                     button.classList.add("bg-c-black");
                 }
+                console.log(`Button toggled: ${action} -> ${button.textContent}`);
             } else {
                 console.error("Server error:", data.error);
                 alert("Error: " + data.error);
@@ -206,6 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
 
 // ##############################
 burger.addEventListener("click", () => {
