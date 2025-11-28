@@ -5,6 +5,29 @@ from werkzeug.security import check_password_hash
 import uuid
 user_verification_key = uuid.uuid4().hex
 
+import hashlib
+import base64
+
+def verify_scrypt_password(stored, provided):
+    # stored example: scrypt:N:r:p$salt$hash
+    parts = stored.split('$')
+    if len(parts) != 3:
+        return False
+    params, salt_b64, hash_b64 = parts
+    N, r, p = map(int, params.split(':')[1:])
+    salt = base64.b64decode(salt_b64)
+    stored_hash = base64.b64decode(hash_b64)
+    test_hash = hashlib.scrypt(
+        provided.encode(),
+        salt=salt,
+        n=N,
+        r=r,
+        p=p,
+        maxmem=0,
+        dklen=len(stored_hash)
+    )
+    return test_hash == stored_hash
+
 import gspread
 import requests
 import json
