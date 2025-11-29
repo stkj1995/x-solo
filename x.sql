@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 29. 11 2025 kl. 13:47:40
+-- Genereringstid: 29. 11 2025 kl. 15:05:53
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -101,6 +101,26 @@ INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `com
 ('c010', 'p007', 'u008', 'Loving this platform too!', '2025-11-27 11:45:50'),
 ('c011', 'p004', 'u002', 'Thanks for sharing!', '2025-11-27 13:10:20'),
 ('c012', 'p005', 'u003', 'Very helpful post.', '2025-11-27 13:12:33');
+
+--
+-- Triggers/udløsere `comments`
+--
+DELIMITER $$
+CREATE TRIGGER `after_comment_delete` AFTER DELETE ON `comments` FOR EACH ROW BEGIN
+  UPDATE posts
+  SET post_total_comments = post_total_comments - 1
+  WHERE post_pk = OLD.comment_post_fk;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `after_comment_insert` AFTER INSERT ON `comments` FOR EACH ROW BEGIN
+  UPDATE posts
+  SET post_total_comments = post_total_comments + 1
+  WHERE post_pk = NEW.comment_post_fk;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -338,8 +358,6 @@ ALTER TABLE `admin`
 --
 ALTER TABLE `comments`
   ADD PRIMARY KEY (`comment_pk`),
-  ADD KEY `idx_comment_post_fk` (`comment_post_fk`),
-  ADD KEY `idx_comment_user_fk` (`comment_user_fk`),
   ADD KEY `idx_comment_post` (`comment_post_fk`),
   ADD KEY `idx_comment_user` (`comment_user_fk`);
 
@@ -358,8 +376,7 @@ ALTER TABLE `follows`
 --
 ALTER TABLE `languages`
   ADD PRIMARY KEY (`language_pk`),
-  ADD UNIQUE KEY `language_code` (`language_code`),
-  ADD UNIQUE KEY `unique_language_code` (`language_code`);
+  ADD UNIQUE KEY `language_code` (`language_code`);
 
 --
 -- Indeks for tabel `likes`
@@ -367,8 +384,6 @@ ALTER TABLE `languages`
 ALTER TABLE `likes`
   ADD PRIMARY KEY (`like_pk`),
   ADD UNIQUE KEY `unique_like` (`like_user_fk`,`like_post_fk`),
-  ADD KEY `idx_like_post_fk` (`like_post_fk`),
-  ADD KEY `idx_like_user_fk` (`like_user_fk`),
   ADD KEY `idx_like_post` (`like_post_fk`),
   ADD KEY `idx_like_user` (`like_user_fk`);
 
@@ -377,18 +392,16 @@ ALTER TABLE `likes`
 --
 ALTER TABLE `posts`
   ADD PRIMARY KEY (`post_pk`),
-  ADD KEY `idx_post_user_fk` (`post_user_fk`),
   ADD KEY `idx_post_total_likes` (`post_total_likes`),
-  ADD KEY `idx_created_at` (`created_at`);
+  ADD KEY `idx_user_created_at` (`post_user_fk`,`created_at`);
 ALTER TABLE `posts` ADD FULLTEXT KEY `post_message` (`post_message`);
-ALTER TABLE `posts` ADD FULLTEXT KEY `post_message_2` (`post_message`);
 
 --
 -- Indeks for tabel `trends`
 --
 ALTER TABLE `trends`
   ADD PRIMARY KEY (`trend_pk`),
-  ADD KEY `trend_user_fk` (`trend_user_fk`);
+  ADD KEY `idx_trend_user_active` (`trend_user_fk`,`is_active`);
 
 --
 -- Indeks for tabel `users`
@@ -397,18 +410,7 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`user_pk`),
   ADD UNIQUE KEY `user_email` (`user_email`),
   ADD UNIQUE KEY `user_username` (`user_username`),
-  ADD UNIQUE KEY `user_email_3` (`user_email`),
-  ADD UNIQUE KEY `user_email_4` (`user_email`),
-  ADD UNIQUE KEY `user_email_5` (`user_email`),
-  ADD UNIQUE KEY `user_username_2` (`user_username`),
-  ADD UNIQUE KEY `user_email_6` (`user_email`),
-  ADD UNIQUE KEY `user_username_3` (`user_username`),
-  ADD UNIQUE KEY `user_email_7` (`user_email`),
-  ADD UNIQUE KEY `user_username_4` (`user_username`),
   ADD KEY `idx_verified_at` (`user_verified_at`),
-  ADD KEY `user_email_2` (`user_email`),
-  ADD KEY `idx_user_email` (`user_email`),
-  ADD KEY `idx_user_username` (`user_username`),
   ADD KEY `fk_user_language` (`user_language_fk`);
 
 -- --------------------------------------------------------
