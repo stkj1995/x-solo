@@ -37,17 +37,17 @@
 
         <div class="post-actions">
             <button id="toggleButton" class="action"><i class="fa-regular fa-comment"></i> 12</button>
-            <div id="box" style="display: none;">This is the box</div>
+            <div id="box" class="hidden">This is the box</div>
             <span class="action"><i class="fa-solid fa-retweet"></i> 5</span>
             {% include "___button_like_tweet.html" %}
             <span class="action"><i class="fa-solid fa-chart-simple"></i> 230</span>
             <span class="action"><i class="fa-solid fa-share"></i></span>
 
-            {# Edit/Delete only for owner #}
             {% if tweet.user_username == user.user_username %}
             <button onclick="editPost('{{ tweet.post_pk }}', '{{ tweet.post_message|escape }}')">Edit</button>
             <button onclick="deletePost('{{ tweet.post_pk }}')">Delete</button>
             {% endif %}
         </div>
+
     </div>
 </article>
