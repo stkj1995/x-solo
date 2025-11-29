@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 28. 11 2025 kl. 12:09:43
+-- Genereringstid: 29. 11 2025 kl. 12:34:09
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -30,9 +30,20 @@ CREATE DEFINER=`root`@`%` PROCEDURE `add_post` (IN `userID` CHAR(32), IN `messag
   VALUES (UUID(), userID, message, imagePath, 0);
 END$$
 
+CREATE DEFINER=`root`@`%` PROCEDURE `create_post` (IN `p_user_pk` CHAR(32), IN `p_message` VARCHAR(280), IN `p_image` VARCHAR(255))   BEGIN
+  INSERT INTO posts(post_pk, post_user_fk, post_message, post_image_path, post_total_likes, created_at)
+  VALUES(UUID(), p_user_pk, p_message, p_image, 0, NOW());
+END$$
+
 CREATE DEFINER=`root`@`%` PROCEDURE `follow_user` (IN `followerID` CHAR(32), IN `targetID` CHAR(32))   BEGIN
   INSERT INTO follows(follow_pk, follow_user_fk, follow_target_fk)
   VALUES (UUID(), followerID, targetID);
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `get_profile` (IN `p_user_pk` CHAR(32))   BEGIN
+  SELECT * FROM users WHERE user_pk = p_user_pk;
+  SELECT * FROM posts WHERE post_user_fk = p_user_pk ORDER BY created_at DESC;
+  SELECT * FROM follows WHERE follow_target_fk = p_user_pk;
 END$$
 
 DELIMITER ;
@@ -52,6 +63,13 @@ CREATE TABLE `admin` (
   `admin_role` varchar(50) DEFAULT 'superadmin',
   `admin_created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Data dump for tabellen `admin`
+--
+
+INSERT INTO `admin` (`admin_pk`, `admin_email`, `admin_password`, `admin_first_name`, `admin_last_name`, `admin_role`, `admin_created_at`) VALUES
+('a001', 'admin@example.com', 'scrypt:hashAdmin', 'Super', 'Admin', 'superadmin', '2025-11-29 12:15:34');
 
 -- --------------------------------------------------------
 
@@ -167,6 +185,18 @@ CREATE TRIGGER `after_like_insert` AFTER INSERT ON `likes` FOR EACH ROW BEGIN
 END
 $$
 DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_after_like_delete` AFTER DELETE ON `likes` FOR EACH ROW UPDATE posts
+SET post_total_likes = post_total_likes - 1
+WHERE post_pk = OLD.like_post_fk
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_after_like_insert` AFTER INSERT ON `likes` FOR EACH ROW UPDATE posts 
+SET post_total_likes = post_total_likes + 1 
+WHERE post_pk = NEW.like_post_fk
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -200,6 +230,7 @@ CREATE TABLE `posts` (
 --
 
 INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`) VALUES
+('6a9950a311c74a7086306442c3780f95', 'u008', '', 0, 'uploads/mig3.jpg', '2025-11-28 13:20:25'),
 ('83a69b7b2b32475e9bf2d155e32557d3', 'u008', '', 0, 'uploads/babymad.jpeg', '2025-11-28 09:53:45'),
 ('p001', 'u002', 'Hello world!', 0, 'post_1.jpg', '2025-11-27 13:01:44'),
 ('p002', 'u002', 'My first post', 0, '', '2025-11-27 13:01:44'),
@@ -218,18 +249,22 @@ INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_like
 CREATE TABLE `trends` (
   `trend_pk` char(32) NOT NULL,
   `trend_title` varchar(100) NOT NULL,
-  `trend_message` varchar(100) NOT NULL
+  `trend_message` varchar(255) NOT NULL,
+  `trend_user_fk` char(32) DEFAULT NULL,
+  `trend_image` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Data dump for tabellen `trends`
 --
 
-INSERT INTO `trends` (`trend_pk`, `trend_title`, `trend_message`) VALUES
-('t001', 'New Launch', 'A new rocket has been sent to the moon'),
-('t002', 'Politics are Rotten', 'Everyone talks, few act'),
-('t003', 'Tech Update', 'New AI model released'),
-('t004', 'Sports', 'Big game tonight');
+INSERT INTO `trends` (`trend_pk`, `trend_title`, `trend_message`, `trend_user_fk`, `trend_image`, `is_active`, `created_at`) VALUES
+('t001', 'New Launch', 'A new rocket has been sent to the moon', 'u001', 'rocket.png', 1, '2025-11-29 12:14:26'),
+('t002', 'Politics are Rotten', 'Everyone talks, few act', 'u002', 'politics.png', 1, '2025-11-29 12:14:26'),
+('t003', 'Tech Update', 'New AI model released', 'u003', 'ai.png', 1, '2025-11-29 12:14:26'),
+('t004', 'Sports', 'Big game tonight', 'u001', 'sports.png', 1, '2025-11-29 12:14:26');
 
 -- --------------------------------------------------------
 
@@ -247,22 +282,23 @@ CREATE TABLE `users` (
   `user_avatar_path` varchar(50) NOT NULL,
   `user_verification_key` char(32) NOT NULL,
   `user_verified_at` bigint(20) UNSIGNED NOT NULL,
-  `user_role` enum('user','admin') NOT NULL DEFAULT 'user'
+  `user_role` enum('user','admin') NOT NULL DEFAULT 'user',
+  `user_language_fk` char(32) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Data dump for tabellen `users`
 --
 
-INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `user_verification_key`, `user_verified_at`, `user_role`) VALUES
-('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', '', 'avatar_2.jpg', 'key123', 0, 'user'),
-('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', '', 'avatar_3.jpg', 'key456', 0, 'user'),
-('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', '', 1700001000, 'user'),
-('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', '', 'avatar_5.jpg', '', 1700002000, 'user'),
-('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', '', 'avatar_6.jpg', 'key789', 0, 'user'),
-('u007', 'test@example.com', 'hash', 'testuser', 'Test', 'User', 'avatar.jpg', '', 1764249116, 'user'),
-('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$yVTjgdfffRT32az3$702fae15648ac053be5d381bb2d55f877ce1ad7e51c3d4af7c1fdbd97d8c0ba0f8bfee9e523241a284c70dd69ddb056845b1e17d17b2089e10bc1718cacf162d', 'sophie', 'Sophie', 'Teinvig Kjer', 'https://avatar.iran.liara.run/public/40', '', 1764323341, 'user'),
-('u999', 'admin@example.com', 'scrypt:hashAdmin', 'admin', 'Super', 'Admin', 'avatar_admin.jpg', '', 1700000000, 'admin');
+INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `user_verification_key`, `user_verified_at`, `user_role`, `user_language_fk`) VALUES
+('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Placeholder', '', 'avatar_placeholder.jpg', '', 0, 'user', NULL),
+('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', '', 'avatar_2.jpg', 'key123', 0, 'user', NULL),
+('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', '', 'avatar_3.jpg', 'key456', 0, 'user', NULL),
+('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', '', 1700001000, 'user', NULL),
+('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', '', 'avatar_5.jpg', '', 1700002000, 'user', NULL),
+('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', '', 'avatar_6.jpg', 'key789', 0, 'user', NULL),
+('u007', 'test@example.com', 'hash', 'testuser', 'Test', 'User', 'avatar.jpg', '', 1764249116, 'user', NULL),
+('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$yVTjgdfffRT32az3$702fae15648ac053be5d381bb2d55f877ce1ad7e51c3d4af7c1fdbd97d8c0ba0f8bfee9e523241a284c70dd69ddb056845b1e17d17b2089e10bc1718cacf162d', 'sophie', 'Sophie', 'Teinvig Kjer', 'https://avatar.iran.liara.run/public/40', '', 1764323341, 'user', NULL);
 
 -- --------------------------------------------------------
 
@@ -293,7 +329,9 @@ ALTER TABLE `admin`
 ALTER TABLE `comments`
   ADD PRIMARY KEY (`comment_pk`),
   ADD KEY `idx_comment_post_fk` (`comment_post_fk`),
-  ADD KEY `idx_comment_user_fk` (`comment_user_fk`);
+  ADD KEY `idx_comment_user_fk` (`comment_user_fk`),
+  ADD KEY `idx_comment_post` (`comment_post_fk`),
+  ADD KEY `idx_comment_user` (`comment_user_fk`);
 
 --
 -- Indeks for tabel `follows`
@@ -301,7 +339,9 @@ ALTER TABLE `comments`
 ALTER TABLE `follows`
   ADD PRIMARY KEY (`follow_pk`),
   ADD UNIQUE KEY `unique_follow` (`follow_user_fk`,`follow_target_fk`),
-  ADD KEY `idx_follow_target_fk` (`follow_target_fk`);
+  ADD KEY `idx_follow_target_fk` (`follow_target_fk`),
+  ADD KEY `idx_follow_user` (`follow_user_fk`),
+  ADD KEY `idx_follow_target` (`follow_target_fk`);
 
 --
 -- Indeks for tabel `languages`
@@ -318,7 +358,9 @@ ALTER TABLE `likes`
   ADD PRIMARY KEY (`like_pk`),
   ADD UNIQUE KEY `unique_like` (`like_user_fk`,`like_post_fk`),
   ADD KEY `idx_like_post_fk` (`like_post_fk`),
-  ADD KEY `idx_like_user_fk` (`like_user_fk`);
+  ADD KEY `idx_like_user_fk` (`like_user_fk`),
+  ADD KEY `idx_like_post` (`like_post_fk`),
+  ADD KEY `idx_like_user` (`like_user_fk`);
 
 --
 -- Indeks for tabel `posts`
@@ -327,12 +369,14 @@ ALTER TABLE `posts`
   ADD PRIMARY KEY (`post_pk`),
   ADD KEY `idx_post_user_fk` (`post_user_fk`);
 ALTER TABLE `posts` ADD FULLTEXT KEY `post_message` (`post_message`);
+ALTER TABLE `posts` ADD FULLTEXT KEY `post_message_2` (`post_message`);
 
 --
 -- Indeks for tabel `trends`
 --
 ALTER TABLE `trends`
-  ADD PRIMARY KEY (`trend_pk`);
+  ADD PRIMARY KEY (`trend_pk`),
+  ADD KEY `trend_user_fk` (`trend_user_fk`);
 
 --
 -- Indeks for tabel `users`
@@ -345,8 +389,13 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `user_email_4` (`user_email`),
   ADD UNIQUE KEY `user_email_5` (`user_email`),
   ADD UNIQUE KEY `user_username_2` (`user_username`),
+  ADD UNIQUE KEY `user_email_6` (`user_email`),
+  ADD UNIQUE KEY `user_username_3` (`user_username`),
   ADD KEY `idx_verified_at` (`user_verified_at`),
-  ADD KEY `user_email_2` (`user_email`);
+  ADD KEY `user_email_2` (`user_email`),
+  ADD KEY `idx_user_email` (`user_email`),
+  ADD KEY `idx_user_username` (`user_username`),
+  ADD KEY `fk_user_language` (`user_language_fk`);
 
 -- --------------------------------------------------------
 
@@ -376,19 +425,43 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `user_po
 ALTER TABLE `comments`
   ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`comment_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`comment_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`comment_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`comment_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_comments_user` FOREIGN KEY (`comment_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
+
+--
+-- Begrænsninger for tabel `follows`
+--
+ALTER TABLE `follows`
+  ADD CONSTRAINT `fk_follows_target` FOREIGN KEY (`follow_target_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_follows_user` FOREIGN KEY (`follow_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
+  ADD CONSTRAINT `follows_ibfk_1` FOREIGN KEY (`follow_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
+  ADD CONSTRAINT `follows_ibfk_2` FOREIGN KEY (`follow_target_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
 
 --
 -- Begrænsninger for tabel `likes`
 --
 ALTER TABLE `likes`
-  ADD CONSTRAINT `fk_likes_post` FOREIGN KEY (`like_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_likes_post` FOREIGN KEY (`like_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_likes_user` FOREIGN KEY (`like_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Begrænsninger for tabel `posts`
 --
 ALTER TABLE `posts`
-  ADD CONSTRAINT `fk_post_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_post_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_posts_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
+
+--
+-- Begrænsninger for tabel `trends`
+--
+ALTER TABLE `trends`
+  ADD CONSTRAINT `trends_ibfk_1` FOREIGN KEY (`trend_user_fk`) REFERENCES `users` (`user_pk`);
+
+--
+-- Begrænsninger for tabel `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `fk_user_language` FOREIGN KEY (`user_language_fk`) REFERENCES `languages` (`language_pk`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

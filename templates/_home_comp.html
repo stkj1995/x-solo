@@ -1,11 +1,17 @@
 <div class="d-flex flex-row ma-2">
     <div class="w-auto">
-        <img src="{{ url_for('static', filename='images/avatar_1.jpg') }}" class="w-8 rounded-full" title="image">
+        {% set avatar = 'avatar_1.jpg' %}
+        <img src="{{ url_for('static', filename='images/' + avatar) }}" class="w-8 h-8 rounded-full" alt="Profile Picture">
     </div>
+
     {% include "___post_container.html" %}
 </div>
 
 <div id="posts">
-  {% for tweet in tweets: %} {% include "_tweet.html" %} {% endfor %}
-</div>
+    {% for tweet in tweets %}
+        {% set tweet_img = tweet.image_path or 'unknown.jpg' %}
+        {% set tweet_avatar = tweet.user_avatar_path or 'avatar_1.jpg' %}
 
+        {% include "_tweet.html" with context %}
+    {% endfor %}
+</div>
