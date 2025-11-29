@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 29. 11 2025 kl. 12:34:09
+-- Genereringstid: 29. 11 2025 kl. 13:47:40
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -61,15 +61,16 @@ CREATE TABLE `admin` (
   `admin_first_name` varchar(100) NOT NULL,
   `admin_last_name` varchar(100) NOT NULL,
   `admin_role` varchar(50) DEFAULT 'superadmin',
-  `admin_created_at` datetime NOT NULL DEFAULT current_timestamp()
+  `admin_created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `admin_avatar_path` varchar(255) NOT NULL DEFAULT 'avatar_admin_placeholder.jpg'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Data dump for tabellen `admin`
 --
 
-INSERT INTO `admin` (`admin_pk`, `admin_email`, `admin_password`, `admin_first_name`, `admin_last_name`, `admin_role`, `admin_created_at`) VALUES
-('a001', 'admin@example.com', 'scrypt:hashAdmin', 'Super', 'Admin', 'superadmin', '2025-11-29 12:15:34');
+INSERT INTO `admin` (`admin_pk`, `admin_email`, `admin_password`, `admin_first_name`, `admin_last_name`, `admin_role`, `admin_created_at`, `admin_avatar_path`) VALUES
+('a001', 'admin@example.com', 'scrypt:hashAdmin', 'Super', 'Admin', 'superadmin', '2025-11-29 12:15:34', 'avatar_admin.jpg');
 
 -- --------------------------------------------------------
 
@@ -93,7 +94,13 @@ INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `com
 ('c001', 'p001', 'u002', 'Nice post!', '2025-11-27 13:01:44'),
 ('c002', 'p001', 'u003', 'I agree!', '2025-11-27 13:01:44'),
 ('c004', 'p004', 'u004', 'Cool update!', '2025-11-27 13:01:44'),
-('c006', 'p006', 'u003', 'Good morning!', '2025-11-27 13:01:44');
+('c006', 'p006', 'u003', 'Good morning!', '2025-11-27 13:01:44'),
+('c007', 'p003', 'u002', 'Testing works fine.', '2025-11-27 09:22:30'),
+('c008', 'p005', 'u007', 'Excited to see more posts!', '2025-11-27 10:12:44'),
+('c009', 'p006', 'u001', 'Hope everyone has a great day!', '2025-11-27 08:30:12'),
+('c010', 'p007', 'u008', 'Loving this platform too!', '2025-11-27 11:45:50'),
+('c011', 'p004', 'u002', 'Thanks for sharing!', '2025-11-27 13:10:20'),
+('c012', 'p005', 'u003', 'Very helpful post.', '2025-11-27 13:12:33');
 
 -- --------------------------------------------------------
 
@@ -230,15 +237,17 @@ CREATE TABLE `posts` (
 --
 
 INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`) VALUES
-('6a9950a311c74a7086306442c3780f95', 'u008', '', 0, 'uploads/mig3.jpg', '2025-11-28 13:20:25'),
-('83a69b7b2b32475e9bf2d155e32557d3', 'u008', '', 0, 'uploads/babymad.jpeg', '2025-11-28 09:53:45'),
 ('p001', 'u002', 'Hello world!', 0, 'post_1.jpg', '2025-11-27 13:01:44'),
-('p002', 'u002', 'My first post', 0, '', '2025-11-27 13:01:44'),
+('p0010', 'u008', 'Such a nice weather', 4, 'post_5.jpg', '2025-11-28 09:53:45'),
+('p002', 'u002', 'My first post', 0, 'cake.png', '2025-11-27 13:01:44'),
 ('p003', 'u003', 'Testing posts', 0, 'post_2.jpg', '2025-11-27 13:01:44'),
-('p004', 'u002', 'Another day, another post', 0, '', '2025-11-27 13:01:44'),
+('p004', 'u002', 'Another day, another post', 2, 'autumn.png', '2025-11-27 13:01:44'),
 ('p005', 'u004', 'Excited to join!', 0, 'post_3.jpg', '2025-11-27 13:01:44'),
-('p006', 'u005', 'Good morning everyone', 0, '', '2025-11-27 13:01:44'),
-('p007', 'u006', 'Loving this platform', 0, 'post_4.jpg', '2025-11-27 13:01:44');
+('p006', 'u005', 'Good morning everyone', 0, 'post_5.jpg', '2025-11-27 13:01:44'),
+('p007', 'u006', 'Loving this platform', 6, 'post_4.jpg', '2025-11-27 13:01:44'),
+('p008', 'u008', 'Today I was taking the bus, and then....', 0, 'travel.png', '2025-11-29 12:35:38'),
+('p009', 'u008', 'I have used ChatGPT for this image', 0, 'study.png', '2025-11-28 13:20:25'),
+('p011', 'admin001', 'Welcome!!', 0, 'coffeee.png', '2025-11-29 13:09:40');
 
 -- --------------------------------------------------------
 
@@ -280,8 +289,8 @@ CREATE TABLE `users` (
   `user_first_name` varchar(20) NOT NULL,
   `user_last_name` varchar(20) NOT NULL DEFAULT '',
   `user_avatar_path` varchar(50) NOT NULL,
-  `user_verification_key` char(32) NOT NULL,
-  `user_verified_at` bigint(20) UNSIGNED NOT NULL,
+  `user_verification_key` char(32) NOT NULL DEFAULT '',
+  `user_verified_at` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
   `user_role` enum('user','admin') NOT NULL DEFAULT 'user',
   `user_language_fk` char(32) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -291,13 +300,14 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `user_verification_key`, `user_verified_at`, `user_role`, `user_language_fk`) VALUES
-('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Placeholder', '', 'avatar_placeholder.jpg', '', 0, 'user', NULL),
-('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', '', 'avatar_2.jpg', 'key123', 0, 'user', NULL),
-('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', '', 'avatar_3.jpg', 'key456', 0, 'user', NULL),
-('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', '', 1700001000, 'user', NULL),
-('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', '', 'avatar_5.jpg', '', 1700002000, 'user', NULL),
-('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', '', 'avatar_6.jpg', 'key789', 0, 'user', NULL),
-('u007', 'test@example.com', 'hash', 'testuser', 'Test', 'User', 'avatar.jpg', '', 1764249116, 'user', NULL),
+('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.png', '\'\'', 1764421513, 'admin', NULL),
+('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Amin', 'Jensen', 'avatar_7.jpg', '\'\'', 0, 'user', NULL),
+('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', 'Gertsen', 'avatar_2.jpg', 'key123', 0, 'user', NULL),
+('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', 'Sørensen', 'avatar_3.jpg', 'key456', 0, 'user', NULL),
+('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', '\'\'', 1700001000, 'user', NULL),
+('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', 'Eriksen', 'avatar_5.jpg', '\'\'', 1700002000, 'user', NULL),
+('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', 'Hansen', 'avatar_6.jpg', 'key789', 0, 'user', NULL),
+('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar.jpg', '\'\'', 1764249116, 'user', NULL),
 ('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$yVTjgdfffRT32az3$702fae15648ac053be5d381bb2d55f877ce1ad7e51c3d4af7c1fdbd97d8c0ba0f8bfee9e523241a284c70dd69ddb056845b1e17d17b2089e10bc1718cacf162d', 'sophie', 'Sophie', 'Teinvig Kjer', 'https://avatar.iran.liara.run/public/40', '', 1764323341, 'user', NULL);
 
 -- --------------------------------------------------------
@@ -367,7 +377,9 @@ ALTER TABLE `likes`
 --
 ALTER TABLE `posts`
   ADD PRIMARY KEY (`post_pk`),
-  ADD KEY `idx_post_user_fk` (`post_user_fk`);
+  ADD KEY `idx_post_user_fk` (`post_user_fk`),
+  ADD KEY `idx_post_total_likes` (`post_total_likes`),
+  ADD KEY `idx_created_at` (`created_at`);
 ALTER TABLE `posts` ADD FULLTEXT KEY `post_message` (`post_message`);
 ALTER TABLE `posts` ADD FULLTEXT KEY `post_message_2` (`post_message`);
 
@@ -391,6 +403,8 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `user_username_2` (`user_username`),
   ADD UNIQUE KEY `user_email_6` (`user_email`),
   ADD UNIQUE KEY `user_username_3` (`user_username`),
+  ADD UNIQUE KEY `user_email_7` (`user_email`),
+  ADD UNIQUE KEY `user_username_4` (`user_username`),
   ADD KEY `idx_verified_at` (`user_verified_at`),
   ADD KEY `user_email_2` (`user_email`),
   ADD KEY `idx_user_email` (`user_email`),
