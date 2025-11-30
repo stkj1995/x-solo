@@ -1,14 +1,90 @@
 [
   {
     "_key": "p001",
-    "post_user_fk": "u001",
+    "post_user_fk": "users/u002",
     "post_message": "Hello world!",
-    "post_created_at": "2025-11-26 09:00:00"
+    "post_total_likes": 0,
+    "post_image_path": "post_1.jpg",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "p0010",
+    "post_user_fk": "users/u008",
+    "post_message": "Such a nice weather",
+    "post_total_likes": 4,
+    "post_image_path": "post_5.jpg",
+    "created_at": "2025-11-28 09:53:45"
   },
   {
     "_key": "p002",
-    "post_user_fk": "u002",
-    "post_message": "I love coding!",
-    "post_created_at": "2025-11-26 09:15:00"
+    "post_user_fk": "users/u002",
+    "post_message": "My first post",
+    "post_total_likes": 0,
+    "post_image_path": "cake.png",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "p003",
+    "post_user_fk": "users/u003",
+    "post_message": "Testing posts",
+    "post_total_likes": 0,
+    "post_image_path": "post_2.jpg",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "p004",
+    "post_user_fk": "users/u002",
+    "post_message": "Another day, another post",
+    "post_total_likes": 2,
+    "post_image_path": "autumn.png",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "p005",
+    "post_user_fk": "users/u004",
+    "post_message": "Excited to join!",
+    "post_total_likes": 0,
+    "post_image_path": "post_3.jpg",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "p006",
+    "post_user_fk": "users/u005",
+    "post_message": "Good morning everyone",
+    "post_total_likes": 0,
+    "post_image_path": "post_5.jpg",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "p007",
+    "post_user_fk": "users/u006",
+    "post_message": "Loving this platform",
+    "post_total_likes": 6,
+    "post_image_path": "post_4.jpg",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "p008",
+    "post_user_fk": "users/u008",
+    "post_message": "Today I was taking the bus, and then....",
+    "post_total_likes": 0,
+    "post_image_path": "travel.png",
+    "created_at": "2025-11-29 12:35:38"
+  },
+  {
+    "_key": "p009",
+    "post_user_fk": "users/u008",
+    "post_message": "I have used ChatGPT for this image",
+    "post_total_likes": 0,
+    "post_image_path": "study.png",
+    "created_at": "2025-11-28 13:20:25"
+  },
+  {
+    "_key": "p011",
+    "post_user_fk": "users/admin001",
+    "post_message": "Welcome!!",
+    "post_total_likes": 0,
+    "post_image_path": "coffeee.png",
+    "created_at": "2025-11-29 13:09:40"
   }
 ]
