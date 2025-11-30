@@ -1,0 +1,16 @@
+[
+  {
+    "_key": "c001",
+    "comment_post_fk": "p001",
+    "comment_user_fk": "u002",
+    "comment_message": "Nice post!",
+    "created_at": "2025-11-27 13:01:44"
+  },
+  {
+    "_key": "c002",
+    "comment_post_fk": "p001",
+    "comment_user_fk": "u003",
+    "comment_message": "I agree!",
+    "created_at": "2025-11-27 13:05:00"
+  }
+]
