@@ -1,0 +1,26 @@
+[
+  {
+    "_key": "tu001",
+    "_from": "users/u001",
+    "_to": "trends/t001",
+    "created_at": "2025-11-29 12:14:26"
+  },
+  {
+    "_key": "tu002",
+    "_from": "users/u002",
+    "_to": "trends/t002",
+    "created_at": "2025-11-29 12:14:26"
+  },
+  {
+    "_key": "tu003",
+    "_from": "users/u003",
+    "_to": "trends/t003",
+    "created_at": "2025-11-29 12:14:26"
+  },
+  {
+    "_key": "tu004",
+    "_from": "users/u001",
+    "_to": "trends/t004",
+    "created_at": "2025-11-29 12:14:26"
+  }
+]
