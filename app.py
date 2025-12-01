@@ -238,29 +238,42 @@ def admin_logout():
     return redirect(url_for("admin_login"))
 
 ################################
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", defaults={'lan': 'english'}, methods=["GET", "POST"])
 @app.route("/login/<lan>", methods=["GET", "POST"])
 @x.no_cache
 def login(lan="english"):
+    # --- Language handling ---
     if lan not in x.allowed_languages:
         lan = "english"
     x.default_language = lan
 
+    # --- GET = show login page ---
     if request.method == "GET":
-        if session.get("user", ""):
+        if session.get("user"):
             return redirect(url_for("home"))
         return render_template("login.html", lan=lan)
 
+    # --- POST = process login ---
     if request.method == "POST":
         try:
-            # Handle JSON or regular form data
+            # Read data from JSON or form
             data = request.get_json(force=True) if request.is_json else request.form
-            user_email = data.get("user_email", "").strip()
-            user_password = data.get("user_password", "").strip()
+            user_email = (data.get("user_email") or "").strip()
+            user_password = (data.get("user_password") or "").strip()
 
+            # --- Required fields ---
             if not user_email or not user_password:
                 raise Exception(dictionary.invalid_credentials[lan], 400)
 
+            # --- Email format ---
+            email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+            if not re.match(email_pattern, user_email):
+                raise Exception(dictionary.invalid_credentials[lan], 400)
+
+            # Optional: sanitize email input
+            user_email = escape(user_email)
+
+            # --- Fetch user from DB ---
             db_conn, cursor = x.db()
             cursor.execute("SELECT * FROM users WHERE user_email = %s", (user_email,))
             user = cursor.fetchone()
@@ -268,26 +281,30 @@ def login(lan="english"):
             if not user:
                 raise Exception(dictionary.user_not_found[lan], 400)
 
-            # Check hashed password
+            # --- Check password ---
             if not check_password_hash(user["user_password"], user_password):
+                # Optional: track failed login attempts here for rate-limiting
                 raise Exception(dictionary.invalid_credentials[lan], 400)
 
-            # Check verification
-            if user["user_verification_key"] != "":
+            # --- Check email verification ---
+            if user.get("user_verification_key", "") != "":
                 raise Exception(dictionary.user_not_verified[lan], 400)
 
-            # Remove password before setting session
-            user.pop("user_password")
+            # --- Remove password and set session ---
+            user.pop("user_password", None)
             session["user"] = user
 
+            # --- Success redirect ---
             return f"""<mixhtml mix-redirect="{url_for('home')}"></mixhtml>"""
 
         except Exception as ex:
             ic(ex)
+            # --- Validation / user errors ---
             if len(ex.args) > 1 and ex.args[1] == 400:
                 toast_error = render_template("___toast_error.html", message=ex.args[0])
                 return f"""<mixhtml mix-update="#toast">{toast_error}</mixhtml>""", 400
 
+            # --- System error ---
             toast_error = render_template("___toast_error.html", message="System under maintenance")
             return f"""<mixhtml mix-bottom="#toast">{toast_error}</mixhtml>""", 500
 
