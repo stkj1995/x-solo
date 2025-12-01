@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 29. 11 2025 kl. 15:05:53
+-- Genereringstid: 01. 12 2025 kl. 11:58:03
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -248,7 +248,7 @@ CREATE TABLE `posts` (
   `post_user_fk` char(32) NOT NULL,
   `post_message` varchar(280) NOT NULL,
   `post_total_likes` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
-  `post_image_path` varchar(255) NOT NULL,
+  `post_image_path` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -257,15 +257,17 @@ CREATE TABLE `posts` (
 --
 
 INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`) VALUES
+('24cc5dc562484798b66128cf6962961f', 'u008', 'kgfds', 0, '', '2025-12-01 10:23:20'),
+('71e5d597687e4aebb697b5bd156d9f02', 'u008', '', 0, 'uploads/avatar.jpg', '2025-12-01 09:10:28'),
+('cbefa37d03bd4ef5b6c085cf008a6f1b', 'u008', '', 0, 'c8956902b28649308dc1242b393e9b54_avatar.jpg', '2025-12-01 09:46:01'),
+('d87ba4c4d4f64782870a043b4127b7de', 'u008', 'loiyf', 0, '', '2025-12-01 10:08:11'),
 ('p001', 'u002', 'Hello world!', 0, 'post_1.jpg', '2025-11-27 13:01:44'),
-('p0010', 'u008', 'Such a nice weather', 4, 'post_5.jpg', '2025-11-28 09:53:45'),
-('p002', 'u002', 'My first post', 0, 'cake.png', '2025-11-27 13:01:44'),
+('p002', 'u002', 'My first post', 0, 'cake.webp', '2025-11-27 13:01:44'),
 ('p003', 'u003', 'Testing posts', 0, 'post_2.jpg', '2025-11-27 13:01:44'),
 ('p004', 'u002', 'Another day, another post', 2, 'autumn.png', '2025-11-27 13:01:44'),
 ('p005', 'u004', 'Excited to join!', 0, 'post_3.jpg', '2025-11-27 13:01:44'),
 ('p006', 'u005', 'Good morning everyone', 0, 'post_5.jpg', '2025-11-27 13:01:44'),
 ('p007', 'u006', 'Loving this platform', 6, 'post_4.jpg', '2025-11-27 13:01:44'),
-('p008', 'u008', 'Today I was taking the bus, and then....', 0, 'travel.png', '2025-11-29 12:35:38'),
 ('p009', 'u008', 'I have used ChatGPT for this image', 0, 'study.png', '2025-11-28 13:20:25'),
 ('p011', 'admin001', 'Welcome!!', 0, 'coffeee.png', '2025-11-29 13:09:40');
 
@@ -309,7 +311,7 @@ CREATE TABLE `users` (
   `user_first_name` varchar(20) NOT NULL,
   `user_last_name` varchar(20) NOT NULL DEFAULT '',
   `user_avatar_path` varchar(50) NOT NULL,
-  `user_verification_key` char(32) NOT NULL DEFAULT '',
+  `user_verification_key` char(32) DEFAULT NULL,
   `user_verified_at` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
   `user_role` enum('user','admin') NOT NULL DEFAULT 'user',
   `user_language_fk` char(32) DEFAULT NULL
@@ -320,15 +322,15 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `user_verification_key`, `user_verified_at`, `user_role`, `user_language_fk`) VALUES
-('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.png', '\'\'', 1764421513, 'admin', NULL),
+('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.jpg', '\'\'', 1764421513, 'admin', NULL),
 ('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Amin', 'Jensen', 'avatar_7.jpg', '\'\'', 0, 'user', NULL),
-('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', 'Gertsen', 'avatar_2.jpg', 'key123', 0, 'user', NULL),
+('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', 'Gertsen', 'avatar_2.jpg', '1234567890abcdef1234567890abcdef', 0, 'user', NULL),
 ('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', 'Sørensen', 'avatar_3.jpg', 'key456', 0, 'user', NULL),
 ('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', '\'\'', 1700001000, 'user', NULL),
 ('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', 'Eriksen', 'avatar_5.jpg', '\'\'', 1700002000, 'user', NULL),
 ('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', 'Hansen', 'avatar_6.jpg', 'key789', 0, 'user', NULL),
 ('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar.jpg', '\'\'', 1764249116, 'user', NULL),
-('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$yVTjgdfffRT32az3$702fae15648ac053be5d381bb2d55f877ce1ad7e51c3d4af7c1fdbd97d8c0ba0f8bfee9e523241a284c70dd69ddb056845b1e17d17b2089e10bc1718cacf162d', 'sophie', 'Sophie', 'Teinvig Kjer', 'https://avatar.iran.liara.run/public/40', '', 1764323341, 'user', NULL);
+('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$yVTjgdfffRT32az3$702fae15648ac053be5d381bb2d55f877ce1ad7e51c3d4af7c1fdbd97d8c0ba0f8bfee9e523241a284c70dd69ddb056845b1e17d17b2089e10bc1718cacf162d', 'sophie', 'Sophie', 'Teinvig Kjer', 'avatar.jpg', '', 1764421513, 'user', NULL);
 
 -- --------------------------------------------------------
 
