@@ -1,4 +1,4 @@
-* {
+/* * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -84,7 +84,7 @@ nav {
   transition: transform 0.3s ease-in-out;
 }
 
-/* MEDIA QUERIES */
+
 @media (max-width: 1024px) {
   #container {
     grid-template-columns: 1fr; 
@@ -127,7 +127,7 @@ nav {
   }
 }
 
-/* NAVIGATION */
+
 ul {
   list-style: none;
   display: flex;
@@ -205,7 +205,7 @@ ul li a:hover {
   color: rgb(110, 109, 109);
 }
 
-/* MAIN */
+
 main {
   grid-column: 2 / 3;
   border-right: 1px solid rgb(230, 230, 230);
@@ -287,7 +287,7 @@ main {
   color: rgb(29, 155, 240);
 }
 
-/* ASIDE */
+
 aside {
   grid-column: 3 / 4;
   margin: 1rem 2rem 1rem 1rem;
@@ -429,7 +429,7 @@ hr {
   background-color: rgb(247, 249, 249);
 }
 
-/* LANDING PAGE */
+
 .x-landing {
   display: flex;
   flex-direction: row;
@@ -537,7 +537,7 @@ hr {
   }
 }
 
-/* DIALOG COMPONENTS */
+
 .x-dialog {
   display: none;
   position: fixed;
@@ -647,4 +647,540 @@ hr {
 
 .x-dialog__alt a:hover {
   text-decoration: underline;
+} */
+
+
+/* ===============================
+   BASE / MOBILE FIRST STYLES
+   =============================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1rem;
+}
+
+body {
+  width: 100vw;
+  height: 100%;
+}
+
+.hidden-on-load {
+  display: none;
+}
+
+button {
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+}
+
+p {
+  line-height: 1.4rem;
+}
+
+/* ===============================
+   CONTAINER
+   =============================== */
+#container {
+  display: grid;
+  grid-template-columns: 1fr; /* Mobile first: single column */
+  gap: 10px;
+  width: 100vw;
+  height: 100%;
+  margin: auto;
+  padding: 10px;
+}
+
+/* ===============================
+   BURGER MENU
+   =============================== */
+#container .burger {
+  display: block; /* Mobile: visible */
+  position: fixed;
+  top: 0rem;
+  left: 0rem;
+  background: transparent;
+  padding: 1rem;
+  border: none;
+  font-size: 1.5rem;
+  z-index: 1100;
+}
+
+#container .burger i.fa-xmark {
+  display: none;
+  pointer-events: none;
+}
+
+#container .burger.open i.fa-bars {
+  display: none;
+  pointer-events: none;
+}
+
+#container .burger.open i.fa-xmark {
+  display: block;
+  margin-left: 13rem;
+  width: 32px;
+  transform: translateX(0);
+  transition: transform 0.3s ease-in-out;
+}
+
+/* ===============================
+   NAVIGATION
+   =============================== */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 80%; /* mobile */
+  height: 100vh;
+  background: #fff;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 5;
+  transform: translateX(-100%); /* hidden off-screen */
+  transition: transform 0.3s ease-in-out;
+}
+
+nav.active {
+  transform: translateX(0);
+}
+
+ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0rem;
+  padding: 0;
+}
+
+ul li a {
+  color: rgb(15, 15, 15);
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 2rem;
+  transition: background-color 0.2s;
+}
+
+ul li a:hover {
+  background-color: rgb(200, 200, 200);
+}
+
+/* ===============================
+   POST BUTTON
+   =============================== */
+.post-btn {
+  margin: 0.5rem 0;
+  padding: 0.7rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 2rem;
+  background-color: rgb(15, 15, 15);
+  color: white;
+  width: 90%;
+  align-self: center;
+  transition: 0.2s;
+}
+
+.post-btn:hover {
+  background-color: rgb(240, 240, 240);
+  color: rgb(15, 15, 15);
+  border: 1px solid rgb(200, 200, 200);
+}
+
+/* ===============================
+   PROFILE TAG
+   =============================== */
+#profile_tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.6rem;
+  border-radius: 2rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+#profile_tag:hover {
+  background-color: rgb(240, 240, 240);
+}
+
+#profile_tag img {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  margin-right: 0.6rem;
+}
+
+#profile_tag .name {
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+#profile_tag .handle {
+  font-size: 0.75rem;
+  color: rgb(110, 109, 109);
+}
+
+/* ===============================
+   MAIN POSTS
+   =============================== */
+main {
+  grid-column: 1 / -1; /* Mobile: full width */
+  border: none;
+}
+
+.post {
+  display: flex;
+  flex-direction: column; /* Mobile first */
+  gap: 0.5rem;
+  padding: 1rem;
+  border-bottom: 1px solid rgb(230, 230, 230);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.post:hover {
+  background-color: rgb(247, 249, 249);
+}
+
+.post .avatar {
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+}
+
+.post-content {
+  flex: 1;
+}
+
+.post-header {
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.post-header .name {
+  font-weight: bold;
+  margin-right: 0.3rem;
+}
+
+.post-header .handle,
+.post-header .time {
+  color: rgb(110, 109, 109);
+  font-size: 0.85rem;
+}
+
+.text {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.post-image {
+  margin-top: 0.6rem;
+  border-radius: 1rem;
+  max-width: 100%;
+  border: 1px solid rgb(230, 230, 230);
+}
+
+.post-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  max-width: 450px;
+  color: rgb(110, 109, 109);
+  font-size: 0.9rem;
+}
+
+.post-actions .action {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 50%;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.post-actions .action:hover {
+  background-color: rgba(29, 155, 240, 0.1);
+  color: rgb(29, 155, 240);
+}
+
+/* ===============================
+   ASIDE
+   =============================== */
+aside {
+  display: none; /* Mobile: hidden */
+}
+
+/* ===============================
+   LANDING PAGE
+   =============================== */
+.x-landing {
+  display: flex;
+  flex-direction: column; /* Mobile first */
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #fff;
+}
+
+.x-landing__left {
+  display: none; /* Mobile hidden */
+}
+
+.x-landing__right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.x-landing__logo {
+  max-width: 300px;
+  width: 60%;
+}
+
+.x-landing__title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  margin-bottom: 1rem;
+}
+
+.x-landing__subtitle {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.x-landing__btn {
+  width: 90%;
+  max-width: 300px;
+  padding: 0.8rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 9999px;
+  margin-bottom: 1rem;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.x-landing__btn--signup {
+  background: black;
+  color: white;
+}
+
+.x-landing__btn--signup:hover {
+  background: #333;
+}
+
+.x-landing__btn--login {
+  background: white;
+  color: black;
+  border: 1px solid #ccc;
+}
+
+.x-landing__btn--login:hover {
+  background: #f5f5f5;
+}
+
+.x-landing__footer {
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+/* ===============================
+   DIALOGS
+   =============================== */
+.x-dialog {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.x-dialog.active {
+  display: flex;
+}
+
+.x-dialog__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+}
+
+.x-dialog__content {
+  position: relative;
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.x-dialog__close {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.x-dialog__header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.x-dialog__logo {
+  width: 36px;
+  height: 36px;
+}
+
+.x-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.x-dialog__form input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
+
+.x-dialog__btn {
+  width: 100%;
+  background: #0b0f11;
+  color: #fff;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.x-dialog__btn:hover {
+  background: #222;
+}
+
+.x-dialog__alt {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.x-dialog__alt a {
+  color: #1d9bf0;
+  text-decoration: none;
+}
+
+.x-dialog__alt a:hover {
+  text-decoration: underline;
+}
+
+/* ===============================
+   TABLET STYLES (min-width: 600px)
+   =============================== */
+@media (min-width: 600px) {
+  aside {
+    display: block;
+    margin: 1rem;
+  }
+
+  nav {
+    width: 70%;
+    max-width: 260px;
+  }
+}
+
+/* ===============================
+   DESKTOP STYLES (min-width: 1024px)
+   =============================== */
+@media (min-width: 1024px) {
+  #container {
+    grid-template-columns: 15fr 30fr 20fr;
+  }
+
+  #container .burger {
+  display: none; /* desktop: hidden */
+}
+
+  main {
+    grid-column: 2 / 3;
+    border-left: 1px solid rgb(230, 230, 230);
+    border-right: 1px solid rgb(230, 230, 230);
+    margin-left: 0;
+  }
+
+  aside {
+    grid-column: 3 / 4;
+    margin: 1rem 2rem 1rem 1rem;
+  }
+
+  .burger {
+    display: none; /* no burger on desktop */
+  }
+
+  nav {
+    transform: translateX(0);
+    width: 220px;
+  }
+
+  .x-landing {
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .x-landing__left {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .x-landing__right {
+    flex: 1;
+    align-items: flex-start;
+    padding: 2rem;
+  }
+
+  .x-landing__title {
+    font-size: 3rem;
+  }
+
+  .x-landing__subtitle {
+    font-size: 1.5rem;
+  }
+
+  .x-landing__btn {
+    width: 300px;
+  }
 }
