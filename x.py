@@ -2,26 +2,21 @@ from flask import Flask, request, make_response, render_template
 import mysql.connector
 import re 
 import dictionary
-
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
-
 import json
-
 import gspread
 import os
 import json
 from oauth2client.service_account import ServiceAccountCredentials
-
 from icecream import ic
 ic.configureOutput(prefix=f'----- | ', includeContext=True)
 
 app = Flask(__name__)
 
 UPLOAD_ITEM_FOLDER = './images'
-
 
 ##############################
 # Multilanguage / Google Sheets setup
@@ -78,8 +73,6 @@ def lans(key, db_lang_code=None):
     lang = language_map.get(db_lang_code, default_language)
     return dictionary.get(key, {}).get(lang, key)
 
-
-
 #####################################
 def db():
     try:
@@ -96,7 +89,6 @@ def db():
         print(e, flush=True)
         raise Exception("Database under maintenance", 500)
     
-
 ##############################
 def no_cache(view):
     @wraps(view)
@@ -107,7 +99,6 @@ def no_cache(view):
         response.headers["Expires"] = "0"
         return response
     return no_cache_view
-
 
 ##############################
 REGEX_EMAIL = r"^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$"
@@ -156,15 +147,11 @@ def validate_user_password(lan = "en"):
     if not re.match(REGEX_USER_PASSWORD, user_password): raise Exception(dictionary.invalid_password[lan], 400)
     return user_password
 
-
-
-
 ##############################
 def validate_user_password_confirm():
     user_password = request.form.get("user_password_confirm", "").strip()
     if not re.match(REGEX_USER_PASSWORD, user_password): raise Exception("Twitter exception - Invalid confirm password", 400)
     return user_password
-
 
 ##############################
 REGEX_UUID4 = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
@@ -173,7 +160,6 @@ def validate_uuid4(uuid4 = ""):
         uuid4 = request.values.get("uuid4", "").strip()
     if not re.match(REGEX_UUID4, uuid4): raise Exception("Twitter exception - Invalid uuid4", 400)
     return uuid4
-
 
 ##############################
 REGEX_UUID4_WITHOUT_DASHES = r"^[0-9a-f]{8}[0-9a-f]{4}4[0-9a-f]{3}[89ab][0-9a-f]{3}[0-9a-f]{12}$"
@@ -207,7 +193,6 @@ def validate_comment(comment=""):
 ##############################
 # VALIDATORS
 ##############################
-
 def validate_user_email(lan="english"):
     user_email = request.form.get("user_email", "").strip().lower()
 
@@ -219,7 +204,6 @@ def validate_user_email(lan="english"):
 
     return user_email
 
-
 def validate_user_password(lan="english"):
     user_password = request.form.get("user_password", "")
 
@@ -227,7 +211,6 @@ def validate_user_password(lan="english"):
         raise Exception("Password must be at least 6 characters", 400)
 
     return user_password
-
 
 def validate_user_username(lan="english"):
     user_username = request.form.get("user_username", "").strip()
@@ -240,7 +223,6 @@ def validate_user_username(lan="english"):
 
     return user_username
 
-
 def validate_user_first_name(lan="english"):
     user_first_name = request.form.get("user_first_name", "").strip()
 
@@ -249,7 +231,6 @@ def validate_user_first_name(lan="english"):
 
     return user_first_name
 
-
 ##############################
 def validate_admin_email(lan):
     admin_email = request.form.get("admin_email", "").strip()
@@ -257,13 +238,11 @@ def validate_admin_email(lan):
         raise Exception(dictionary.email_invalid[lan], 400)
     return admin_email
 
-
 def validate_admin_password(lan):
     admin_password = request.form.get("admin_password", "").strip()
     if len(admin_password) < 3:
         raise Exception(dictionary.password_invalid[lan], 400)
     return admin_password
-
 
 ##############################
 def send_email(to_email, subject, template):

@@ -155,40 +155,28 @@ function get_search_results(url, method, data_source_selector, function_after_fe
     server(url, method, data_source_selector, function_after_fetch);
 }
 
-  // Toggle comment form and focus textarea when clicking the comment icon
+// #############################
+ document.addEventListener("DOMContentLoaded", () => {
+
+  // ---------- Toggle comment form and focus textarea ----------
   document.querySelectorAll(".post .fa-comment").forEach(icon => {
     icon.addEventListener("click", e => {
       const postDiv = e.target.closest(".post");
-      const form = postDiv.querySelector("#comment_container"); // your existing form
-      if (form) {
-        // Toggle visibility
-        form.classList.toggle("hidden");
+      const form = postDiv.querySelector("form"); // picks the form inside this post
+      if (!form) return;
 
-        // Focus textarea if shown
-        const textarea = form.querySelector("textarea[name='comment']");
-        if (!form.classList.contains("hidden") && textarea) textarea.focus();
+      // Toggle visibility (hidden class)
+      form.classList.toggle("hidden");
+
+      // Focus textarea if form is visible
+      const textarea = form.querySelector("textarea[name='comment']");
+      if (!form.classList.contains("hidden") && textarea) {
+        textarea.focus();
       }
     });
   });
 
-  // #########################
-  // Handle comment submission
-  document.addEventListener("DOMContentLoaded", () => {
-
-  // Handle clicking the comment icon
-  document.querySelectorAll(".post .fa-comment").forEach(icon => {
-    icon.addEventListener("click", e => {
-      const postDiv = e.target.closest(".post");
-      const form = postDiv.querySelector("form"); // selects the form inside the post
-      if (!form) return;
-
-      // Focus the textarea
-      const textarea = form.querySelector("textarea[name='comment']");
-      if (textarea) textarea.focus();
-    });
-  });
-
-  // Handle comment submission
+  // ---------- Handle comment submission ----------
   document.querySelectorAll(".post form").forEach(form => {
     form.addEventListener("submit", async e => {
       e.preventDefault();
@@ -198,18 +186,19 @@ function get_search_results(url, method, data_source_selector, function_after_fe
 
       const commentText = textarea.value.trim();
 
-      // Extract post_pk from form action URL
-      const actionUrl = form.getAttribute("action");
-      const postFk = actionUrl.split("/").pop();
-
+      // Validate input length
       if (!commentText || commentText.length > 1000) {
         alert("Comment must be 1-1000 characters.");
         return;
       }
 
+      // Extract post_pk from form action URL
+      const actionUrl = form.getAttribute("action"); // e.g., /api-create-comment/<post_pk>
+      const postFk = actionUrl.split("/").pop();
+
       try {
         const formData = new FormData();
-        formData.append("comment_text", commentText); // Flask expects this name
+        formData.append("comment_text", commentText); // Flask expects this key
 
         const res = await fetch(`/api-create-comment/${postFk}`, {
           method: "POST",
@@ -220,15 +209,19 @@ function get_search_results(url, method, data_source_selector, function_after_fe
         const data = await res.json();
 
         if (data.status === "ok") {
+          // Clear textarea
           textarea.value = "";
 
-          // Append new comment below post
+          // Append new comment under the post
           const postDiv = form.closest(".post");
           const commentsContainer = postDiv.querySelector(".post-content");
           const commentEl = document.createElement("div");
           commentEl.className = "comment mt-2 p-2 bg-gray-100 rounded";
           commentEl.innerHTML = `<strong>${data.user_first_name || "You"} ${data.user_last_name || ""}</strong>: ${commentText}`;
           commentsContainer.appendChild(commentEl);
+
+          // Optionally hide the form again
+          form.classList.add("hidden");
         } else {
           alert(data.message || "Failed to post comment.");
         }
@@ -241,7 +234,6 @@ function get_search_results(url, method, data_source_selector, function_after_fe
   });
 
 });
-
 
 // ##############################
 burger.addEventListener("click", () => {

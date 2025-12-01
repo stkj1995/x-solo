@@ -103,39 +103,68 @@ def global_variables():
 @app.route("/admin_login/<lan>", methods=["GET", "POST"])
 @x.no_cache
 def admin_login(lan="english"):
-    if lan not in x.allowed_languages: lan = "english"
+    import re
+    from markupsafe import escape
+    import traceback
+
+    # --- Language handling ---
+    if lan not in getattr(x, "allowed_languages", []):
+        lan = "english"
     x.default_language = lan
 
+    # --- GET request ---
     if request.method == "GET":
-        if session.get("admin", ""):
+        if session.get("admin"):
             return redirect(url_for("admin"))
         return render_template("admin_login.html", lan=lan)
 
+    # --- POST request ---
     if request.method == "POST":
         try:
-            admin_email = x.validate_admin_email(lan)
-            admin_password = x.validate_admin_password(lan)
+            print("Admin login POST received")
 
+            # --- Read and sanitize input ---
+            admin_email = escape(request.form.get("admin_email", "").strip())
+            admin_password = request.form.get("admin_password", "").strip()
+            print(f"Email: {admin_email}, Password length: {len(admin_password)}")
+
+            if not admin_email or not admin_password:
+                raise Exception("Missing email or password", 400)
+
+            # --- Validate email format ---
+            email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+            if not re.match(email_pattern, admin_email):
+                raise Exception("Invalid email format", 400)
+
+            # --- Connect to DB ---
+            print("Connecting to DB...")
             db, cursor = x.db()
-            q = "SELECT * FROM admin WHERE admin_email=%s AND admin_password=%s"
-            cursor.execute(q, (admin_email, admin_password))
+            print("DB connected")
+
+            cursor.execute("SELECT * FROM admin WHERE admin_email=%s", (admin_email,))
             admin = cursor.fetchone()
+            print("Admin fetched:", admin)
 
             if not admin:
-                raise Exception(x.lans("admin_not_found", lan), 400)
+                raise Exception("Admin not found", 400)
 
-            admin.pop("admin_password")
+            # --- Check password hash ---
+            if not check_password_hash(admin.get("admin_password", ""), admin_password):
+                raise Exception("Invalid credentials", 400)
+
+            # --- Remove password for session ---
+            admin.pop("admin_password", None)
             session["admin"] = admin
+            print("Admin logged in successfully:", session["admin"])
 
             return """<browser mix-redirect="/admin"></browser>"""
 
         except Exception as ex:
-            ic(ex)
-            if len(ex.args) > 1 and ex.args[1] == 400:
-                toast_error = render_template("___toast_error.html", message=ex.args[0])
-                return f"""<browser mix-update="#toast">{toast_error}</browser>""", 400
-            toast_error = render_template("___toast_error.html", message=x.lans("system_maintenance", lan))
-            return f"""<browser mix-update="#toast">{toast_error}</browser>""", 500
+            traceback.print_exc()
+            code = 400 if len(ex.args) > 1 and ex.args[1] == 400 else 500
+            msg = ex.args[0] if code == 400 else "System error, check logs"
+            toast_error = render_template("___toast_error.html", message=msg)
+            return f"""<browser mix-update="#toast">{toast_error}</browser>""", code
 
         finally:
             if "cursor" in locals(): cursor.close()
@@ -146,28 +175,32 @@ def admin_login(lan="english"):
 @x.no_cache
 def admin():
     try:
-        admin = session.get("admin", "")
+        admin = session.get("admin")
         if not admin:
             return redirect(url_for("admin_login"))
 
         db, cursor = x.db()
 
-        # Alle brugere
-        cursor.execute("SELECT * FROM users ORDER BY user_pk")
+        # Fetch users
+        cursor.execute("SELECT user_pk, user_email, user_blocked FROM users ORDER BY user_pk")
         users = cursor.fetchall()
 
-        # Alle posts
-        cursor.execute("SELECT * FROM posts ORDER BY post_pk")
+        # Fetch posts
+        cursor.execute("""
+            SELECT posts.post_pk, posts.user_fk, posts.post_blocked, users.user_email
+            FROM posts
+            JOIN users ON posts.user_fk = users.user_pk
+            ORDER BY posts.post_pk
+        """)
         posts = cursor.fetchall()
 
-        # Languages fra x.py
         languages = x.allowed_languages
 
         return render_template("admin.html", admin=admin, users=users, posts=posts, languages=languages)
 
     except Exception as ex:
         ic(ex)
-        return "error"
+        return "System error", 500
 
     finally:
         if "cursor" in locals(): cursor.close()
@@ -178,20 +211,30 @@ def admin():
 def block_user(user_pk):
     try:
         admin = session.get("admin")
-        if not admin: return redirect(url_for("admin_login"))
+        if not admin:
+            return redirect(url_for("admin_login"))
+
+        # Validate UUID
+        import uuid
+        try:
+            user_pk = str(uuid.UUID(user_pk))
+        except ValueError:
+            return "Invalid user ID", 400
 
         db, cursor = x.db()
         cursor.execute("SELECT user_blocked, user_email FROM users WHERE user_pk=%s", (user_pk,))
         row = cursor.fetchone()
-        if not row: return "User not found", 404
+        if not row:
+            return "User not found", 404
 
         new_status = 0 if row["user_blocked"] else 1
         cursor.execute("UPDATE users SET user_blocked=%s WHERE user_pk=%s", (new_status, user_pk))
         db.commit()
 
-        # Send email notification
+        # Send email
         subject = x.lans("account_status_updated")
-        message = f"Your account has been {'unblocked' if new_status==0 else 'blocked'} by the administrator."
+        status_text = "unblocked" if new_status == 0 else "blocked"
+        message = f"Your account has been {status_text} by the administrator."
         x.send_email(row["user_email"], subject, message)
 
         return redirect(url_for("admin"))
@@ -200,29 +243,40 @@ def block_user(user_pk):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
+
 ###############################
 @app.post("/admin/block_post/<post_pk>")
 def block_post(post_pk):
     try:
         admin = session.get("admin")
-        if not admin: return redirect(url_for("admin_login"))
+        if not admin:
+            return redirect(url_for("admin_login"))
+
+        # Validate UUID
+        import uuid
+        try:
+            post_pk = str(uuid.UUID(post_pk))
+        except ValueError:
+            return "Invalid post ID", 400
 
         db, cursor = x.db()
         cursor.execute("""
-            SELECT post_blocked, users.user_email 
-            FROM posts JOIN users ON posts.user_fk = users.user_pk 
+            SELECT post_blocked, users.user_email
+            FROM posts
+            JOIN users ON posts.user_fk = users.user_pk
             WHERE post_pk=%s
         """, (post_pk,))
         row = cursor.fetchone()
-        if not row: return "Post not found", 404
+        if not row:
+            return "Post not found", 404
 
         new_status = 0 if row["post_blocked"] else 1
         cursor.execute("UPDATE posts SET post_blocked=%s WHERE post_pk=%s", (new_status, post_pk))
         db.commit()
 
-        # Send email notification
         subject = x.lans("post_status_updated")
-        message = f"Your post has been {'unblocked' if new_status==0 else 'blocked'} by the administrator."
+        status_text = "unblocked" if new_status == 0 else "blocked"
+        message = f"Your post has been {status_text} by the administrator."
         x.send_email(row["user_email"], subject, message)
 
         return redirect(url_for("admin"))
