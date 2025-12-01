@@ -923,6 +923,8 @@ main {
    =============================== */
 aside {
   display: none; /* Mobile: hidden */
+  margin: 1rem;
+  padding:1rem;
 }
 
 /* ===============================
@@ -1038,6 +1040,7 @@ aside {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  margin: 1rem;
 }
 
 .x-dialog__close {
@@ -1153,6 +1156,12 @@ aside {
     transform: translateX(0);
     width: 220px;
   }
+
+#search_form {
+  position: relative; 
+  margin: 0.5rem;
+  background-color: #cee5f5;
+}
 
   .x-landing {
     flex-direction: row;

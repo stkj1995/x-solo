@@ -63,17 +63,17 @@
         </main>
 
         <aside>
-            <form id="search_form" class="p-relative">
-                <input id="txt_search_for" name="search_for" type="text" placeholder="Search Twitter"
+            <form id="search_form" class="p-relative border-1 border-c-gray:+50 rounded-md pa-3">
+                <input id="txt_search_for" class="py-2 px-4" name="search_for" type="text" placeholder="Search Twitter"
                     oninput="get_search_results('/api-search', 'post', '#search_form', 'parse_search_results')">
-                <button type="button" class="cursor-pointer">Search</button>
+                <button type="button" class="cursor-pointer text-w-bold bg-border-c-gray pl-8">Search</button>
 
                 <div id="search_results"
                     class="d-none p-absolute top-8 left-0 w-full bg-c-white h-50 pa-4 border-1 border-c-gray:+50 rounded-sm">
                 </div>
             </form>
 
-            <div class="border-1 border-c-gray:+50 rounded-md pa-3">
+            <div class="border-1 border-c-gray:+50 rounded-md pa-3 mt-2">
                 <h2 class="text-120 text-c-black text-w-bold">What's happening now</h2>
                 {% for trend in trends %}
                 {% include "_trend.html" %}
