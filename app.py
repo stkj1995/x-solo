@@ -551,64 +551,66 @@ def api_like_tweet():
         # if "db" in locals(): db.close()
         pass
 
-# API CREATE POST #############################
+# ###############################
+# CREATE POST
+# ###############################
 @app.route("/api-create-post", methods=["POST"])
 def api_create_post():
     try:
-        # -----------------------------
-        # Validate session
-        # -----------------------------
         user = session.get("user")
         if not user:
             return "Invalid user", 403
         user_pk = user["user_pk"]
 
-        # -----------------------------
-        # Get text (optional)
-        # -----------------------------
+        # ---------------- Text ----------------
         post_text = request.form.get("post", "").strip()
         if post_text:
-            post_text = x.validate_post(post_text)  # only validate if text exists
+            try:
+                post_text = x.validate_post(post_text)
+            except Exception:
+                pass
+            if len(post_text) < 1 or len(post_text) > 5000:
+                toast_error = render_template(
+                    "___toast_error.html", message="Post must be 1-5000 characters"
+                )
+                return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 400
 
-        post_pk = uuid.uuid4().hex
+        # ---------------- File ----------------
         post_image_path = None
-
-        # -----------------------------
-        # Handle file upload (optional)
-        # -----------------------------
         file = request.files.get("post_image")
-        if file and allowed_file(file.filename):
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-            # Save relative path for templates
-            post_image_path = f"uploads/{filename}"
-        elif file:
-            toast_error = render_template("___toast_error.html", message="File type not allowed")
-            return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 400
+        if file and file.filename:
+            if allowed_file(file.filename):
+                filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                post_image_path = filename
+            else:
+                toast_error = render_template(
+                    "___toast_error.html", message="File type not allowed"
+                )
+                return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 400
 
-        # -----------------------------
-        # Must have at least text or media
-        # -----------------------------
+        # ---------------- Validate ----------------
         if not post_text and not post_image_path:
-            toast_error = render_template("___toast_error.html", message="Cannot post empty content")
+            toast_error = render_template(
+                "___toast_error.html", message="Cannot post empty content"
+            )
             return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 400
 
-        # -----------------------------
-        # Insert into database
-        # -----------------------------
+        # ---------------- Insert DB ----------------
+        post_pk = uuid.uuid4().hex
         db, cursor = x.db()
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO posts (post_pk, post_user_fk, post_message, post_total_likes, post_image_path)
             VALUES (%s, %s, %s, %s, %s)
-        """, (post_pk, user_pk, post_text, 0, post_image_path))
+            """,
+            (post_pk, user_pk, post_text, 0, post_image_path)
+        )
         db.commit()
 
-        # -----------------------------
-        # Render HTML for frontend
-        # -----------------------------
-        toast_ok = render_template("___toast_ok.html", message="The world is reading your post!")
+        # ---------------- Render HTML ----------------
         tweet = {
             "user_first_name": user["user_first_name"],
             "user_last_name": user["user_last_name"],
@@ -618,8 +620,12 @@ def api_create_post():
             "post_pk": post_pk,
             "post_image_path": post_image_path
         }
+
         html_post_container = render_template("___post_container.html")
         html_post = render_template("_tweet.html", tweet=tweet, user=user)
+        toast_ok = render_template(
+            "___toast_ok.html", message="The world is reading your post!"
+        )
 
         return f"""
             <browser mix-bottom="#toast">{toast_ok}</browser>
@@ -629,14 +635,18 @@ def api_create_post():
 
     except Exception as ex:
         if "db" in locals(): db.rollback()
-        import traceback; traceback.print_exc()
-        toast_error = render_template("___toast_error.html", message="System under maintenance")
+        traceback.print_exc()
+        toast_error = render_template(
+            "___toast_error.html", message="System under maintenance"
+        )
         return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 500
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-# API UPDATE POST ################################
+# ###############################
+# UPDATE POST
+# ###############################
 @app.route("/api-update-post/<post_pk>", methods=["POST"])
 def api_update_post(post_pk):
     user = session.get("user")
@@ -650,34 +660,27 @@ def api_update_post(post_pk):
     try:
         db, cursor = x.db()
 
-        # Debug: print incoming data
-        print("Session user:", user)
-        print("Updating post_pk:", post_pk)
-        print("New text:", new_text)
-
-        # Check if post exists and belongs to user first
+        # Check if post exists and belongs to user
         cursor.execute("SELECT post_user_fk FROM posts WHERE post_pk=%s", (post_pk,))
         row = cursor.fetchone()
-        print("DB row:", row)
 
         if not row:
             return jsonify({"success": False, "error": "Post not found"}), 404
         if row["post_user_fk"] != user["user_pk"]:
             return jsonify({"success": False, "error": "Not authorized"}), 403
 
-        # Now safe to update
+        # Safe to update
         cursor.execute(
             "UPDATE posts SET post_message=%s WHERE post_pk=%s AND post_user_fk=%s",
             (new_text, post_pk, user["user_pk"])
         )
         db.commit()
-        print("Rows updated:", cursor.rowcount)
 
         return jsonify({"success": True, "post_message": new_text})
 
     except Exception as e:
         if "db" in locals(): db.rollback()
-        print("Error updating post:", e)
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
         if "cursor" in locals(): cursor.close()
@@ -716,7 +719,7 @@ def api_delete_post(post_pk):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-# API CREATE POST #############################
+# API CREATE comment #############################
 @app.route("/api-create-comment/<post_fk>", methods=["POST"])
 def api_create_comment(post_fk):
     try:

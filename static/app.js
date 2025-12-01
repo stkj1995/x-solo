@@ -5,118 +5,111 @@ document.addEventListener("DOMContentLoaded", () => {
 const burger = document.querySelector(".burger");
 const nav = document.querySelector("nav");
 
-// ########################
+/// ########################
+// CREATE POST
 async function createPost(formId, postsContainerId) {
     const form = document.getElementById(formId);
     const container = document.getElementById(postsContainerId);
     const formData = new FormData(form);
 
-    fetch("/api-create-post", {
-        method: "POST",
-        body: formData,
-        credentials: "same-origin"
-    })
-    .then(res => res.text()) // now returning HTML snippet
-    .then(html => {
-        // Insert returned post into DOM
+    try {
+        const res = await fetch("/api-create-post", {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin"
+        });
+        const html = await res.text();
         container.insertAdjacentHTML("afterbegin", html);
         form.reset();
         console.log("Post created successfully!");
-    })
-    .catch(err => {
+    } catch (err) {
         console.error("Create post error:", err);
         alert("Could not create post. Check console.");
-    });
+    }
 }
 
-document.getElementById("post_container").addEventListener("submit", function(e){
+document.getElementById("post_container")?.addEventListener("submit", function(e){
     e.preventDefault();
     createPost("post_container", "posts");
 });
 
-// ##############################
+// ########################
+// EDIT / SAVE / CANCEL
 function editPost(post_pk, currentText) {
     const postDiv = document.getElementById(`post_${post_pk}`);
-    postDiv.innerHTML = `
-        <textarea id="edit_text_${post_pk}">${currentText}</textarea>
-        <button onclick="savePost('${post_pk}')">Save</button>
-        <button onclick="cancelEdit('${post_pk}', '${currentText.replace(/'/g,"\\'")}')">Cancel</button>
-    `;
-async function server(url, method, data_source_selector, function_after_fetch) {
-  let conn = null;
-  if (method.toUpperCase() == "POST") {
-    const data_source = document.querySelector(data_source_selector);
-    conn = await fetch(url, {
-      method: method,
-      body: new FormData(data_source),
-    });
-  }
-  const data_from_server = await conn.text();
-  if (!conn) {
-    console.log("error connecting to the server");
-  }
-  window[function_after_fetch](data_from_server);
-}
+    if (!postDiv) return;
 
-// ##############################
-function savePost(post_pk) {
-    const postDiv = document.getElementById(`post_${post_pk}`);
-    const newText = document.getElementById(`edit_text_${post_pk}`).value;
+    // Hide original text
+    const textEl = postDiv.querySelector(".text");
+    if (textEl) textEl.style.display = "none";
 
-    const formData = new FormData();
-    formData.append("post_message", newText);
+    // Add textarea for editing
+    let textarea = postDiv.querySelector(".edit-textarea");
+    if (!textarea) {
+        textarea = document.createElement("textarea");
+        textarea.className = "edit-textarea w-full border rounded p-2 mt-2";
+        textarea.id = `edit_text_${post_pk}`;
+        textarea.value = currentText;
+        postDiv.querySelector(".post-content").appendChild(textarea);
+    }
 
-    fetch(`/api-update-post/${post_pk}`, {
-        method: "POST",
-        body: formData,
-        credentials: "same-origin"  // <--- IMPORTANT: sends cookies for session
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            postDiv.innerHTML = `
-                <p class="text">${data.post_message}</p>
-                <button onclick="editPost('${post_pk}', \`${data.post_message}\`)">Edit</button>
-                <button onclick="deletePost('${post_pk}')">Delete</button>
-            `;
-        } else {
-            alert("Failed to save post: " + data.error);
-        }
-    })
-    .catch(err => console.error("Save post error:", err));
-}
-
-// ##############################
-function cancelEdit(post_pk, originalText) {
-    const postDiv = document.getElementById(`post_${post_pk}`);
-    if (postDiv) {
-        postDiv.innerHTML = `
-            <p class="text">${originalText}</p>
-            <button onclick="editPost('${post_pk}', \`${originalText}\`)">Edit</button>
-            <button onclick="deletePost('${post_pk}')">Delete</button>
+    // Add Save & Cancel buttons
+    let btnContainer = postDiv.querySelector(".edit-buttons");
+    if (!btnContainer) {
+        btnContainer = document.createElement("div");
+        btnContainer.className = "edit-buttons mt-2";
+        btnContainer.innerHTML = `
+            <button type="button" onclick="savePost('${post_pk}')">Save</button>
+            <button type="button" onclick="cancelEdit('${post_pk}')">Cancel</button>
         `;
+        postDiv.querySelector(".post-content").appendChild(btnContainer);
     }
 }
 
-function get_search_results(
-  url,
-  method,
-  data_source_selector,
-  function_after_fetch
-) {
-  const txt_search_for = document.querySelector("#txt_search_for");
-  if (txt_search_for.value == "") {
-    console.log("empty search");
-    document.querySelector("#search_results").innerHTML = "";
-    document.querySelector("#search_results").classList.add("d-none");
-    return false;
-  }
-  server(url, method, data_source_selector, function_after_fetch);
+async function savePost(post_pk) {
+    const postDiv = document.getElementById(`post_${post_pk}`);
+    const textarea = postDiv.querySelector(".edit-textarea");
+    if (!textarea) return;
+
+    const formData = new FormData();
+    formData.append("post_message", textarea.value);
+
+    try {
+        const res = await fetch(`/api-update-post/${post_pk}`, {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin"
+        });
+        const data = await res.json();
+        if (data.success) {
+            const textEl = postDiv.querySelector(".text");
+            if (textEl) {
+                textEl.textContent = data.post_message;
+                textEl.style.display = "block";
+            }
+            // Remove edit UI
+            textarea.remove();
+            postDiv.querySelector(".edit-buttons")?.remove();
+        } else {
+            alert("Failed to save post: " + data.error);
+        }
+    } catch (err) {
+        console.error("Save post error:", err);
+    }
 }
 
-// ##############################
+function cancelEdit(post_pk) {
+    const postDiv = document.getElementById(`post_${post_pk}`);
+    const textarea = postDiv.querySelector(".edit-textarea");
+    if (textarea) textarea.remove();
+    postDiv.querySelector(".edit-buttons")?.remove();
+    const textEl = postDiv.querySelector(".text");
+    if (textEl) textEl.style.display = "block";
+}
+
+// ########################
+// DELETE POST
 function deletePost(post_pk) {
-    console.log("Delete clicked", post_pk);
     if (!confirm("Are you sure you want to delete this post?")) return;
 
     fetch(`/api-delete-post/${post_pk}`, {
@@ -208,12 +201,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-
 // ##############################
 burger.addEventListener("click", () => {
     nav.classList.toggle("active");
     burger.classList.toggle("open");
 });
-
-}
 
