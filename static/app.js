@@ -155,51 +155,93 @@ function get_search_results(url, method, data_source_selector, function_after_fe
     server(url, method, data_source_selector, function_after_fetch);
 }
 
-// ##############################
-document.addEventListener("DOMContentLoaded", () => {
-    document.body.addEventListener("click", async (e) => {
-        const button = e.target.closest(".follow-btn");
-        if (!button) return;
+  // Toggle comment form and focus textarea when clicking the comment icon
+  document.querySelectorAll(".post .fa-comment").forEach(icon => {
+    icon.addEventListener("click", e => {
+      const postDiv = e.target.closest(".post");
+      const form = postDiv.querySelector("#comment_container"); // your existing form
+      if (form) {
+        // Toggle visibility
+        form.classList.toggle("hidden");
 
-        const user_pk = button.dataset.user;
-        // Use data-action attribute instead of textContent
-        let action = button.dataset.action || (button.textContent.trim().toLowerCase() === "follow" ? "follow" : "unfollow");
-
-        const formData = new FormData();
-        formData.append("following_pk", user_pk);
-
-        try {
-            const res = await fetch(`/api-${action}`, {
-                method: "POST",
-                body: formData,
-                credentials: "same-origin",
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                if (action === "follow") {
-                    button.textContent = "Unfollow";
-                    button.dataset.action = "unfollow"; // update for next click
-                    button.classList.remove("bg-c-black");
-                    button.classList.add("bg-c-gray-500");
-                } else {
-                    button.textContent = "Follow";
-                    button.dataset.action = "follow"; // update for next click
-                    button.classList.remove("bg-c-gray-500");
-                    button.classList.add("bg-c-black");
-                }
-                console.log(`Button toggled: ${action} -> ${button.textContent}`);
-            } else {
-                console.error("Server error:", data.error);
-                alert("Error: " + data.error);
-            }
-        } catch (err) {
-            console.error("Fetch error:", err);
-            alert("Could not toggle follow. Check console.");
-        }
+        // Focus textarea if shown
+        const textarea = form.querySelector("textarea[name='comment']");
+        if (!form.classList.contains("hidden") && textarea) textarea.focus();
+      }
     });
+  });
+
+  // #########################
+  // Handle comment submission
+  document.addEventListener("DOMContentLoaded", () => {
+
+  // Handle clicking the comment icon
+  document.querySelectorAll(".post .fa-comment").forEach(icon => {
+    icon.addEventListener("click", e => {
+      const postDiv = e.target.closest(".post");
+      const form = postDiv.querySelector("form"); // selects the form inside the post
+      if (!form) return;
+
+      // Focus the textarea
+      const textarea = form.querySelector("textarea[name='comment']");
+      if (textarea) textarea.focus();
+    });
+  });
+
+  // Handle comment submission
+  document.querySelectorAll(".post form").forEach(form => {
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const textarea = form.querySelector("textarea[name='comment']");
+      if (!textarea) return;
+
+      const commentText = textarea.value.trim();
+
+      // Extract post_pk from form action URL
+      const actionUrl = form.getAttribute("action");
+      const postFk = actionUrl.split("/").pop();
+
+      if (!commentText || commentText.length > 1000) {
+        alert("Comment must be 1-1000 characters.");
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append("comment_text", commentText); // Flask expects this name
+
+        const res = await fetch(`/api-create-comment/${postFk}`, {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin"
+        });
+
+        const data = await res.json();
+
+        if (data.status === "ok") {
+          textarea.value = "";
+
+          // Append new comment below post
+          const postDiv = form.closest(".post");
+          const commentsContainer = postDiv.querySelector(".post-content");
+          const commentEl = document.createElement("div");
+          commentEl.className = "comment mt-2 p-2 bg-gray-100 rounded";
+          commentEl.innerHTML = `<strong>${data.user_first_name || "You"} ${data.user_last_name || ""}</strong>: ${commentText}`;
+          commentsContainer.appendChild(commentEl);
+        } else {
+          alert(data.message || "Failed to post comment.");
+        }
+
+      } catch (err) {
+        console.error("Create comment error:", err);
+        alert("Could not post comment. Check console.");
+      }
+    });
+  });
+
 });
+
 
 // ##############################
 burger.addEventListener("click", () => {
