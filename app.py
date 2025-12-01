@@ -556,10 +556,12 @@ def api_like_tweet():
 # ###############################
 @app.route("/api-create-post", methods=["POST"])
 def api_create_post():
+    db = cursor = None
     try:
+        # ---------------- User check ----------------
         user = session.get("user")
         if not user:
-            return "Invalid user", 403
+            return jsonify({"success": False, "error": "User not logged in"}), 403
         user_pk = user["user_pk"]
 
         # ---------------- Text ----------------
@@ -568,49 +570,45 @@ def api_create_post():
             try:
                 post_text = x.validate_post(post_text)
             except Exception:
-                pass
+                pass  # fallback validation
+
             if len(post_text) < 1 or len(post_text) > 5000:
-                toast_error = render_template(
-                    "___toast_error.html", message="Post must be 1-5000 characters"
-                )
-                return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 400
+                return jsonify({"success": False, "error": "Post must be 1-5000 characters"}), 400
 
         # ---------------- File ----------------
-        post_image_path = None
+        post_image_path = ""
         file = request.files.get("post_image")
         if file and file.filename:
             if allowed_file(file.filename):
+                # Make filename unique
                 filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
                 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                post_image_path = filename
+                try:
+                    file.save(file_path)
+                    post_image_path = filename
+                except Exception as e:
+                    return jsonify({"success": False, "error": f"File save failed: {str(e)}"}), 500
             else:
-                toast_error = render_template(
-                    "___toast_error.html", message="File type not allowed"
-                )
-                return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 400
+                return jsonify({"success": False, "error": "File type not allowed"}), 400
 
-        # ---------------- Validate ----------------
-        if not post_text and not post_image_path:
-            toast_error = render_template(
-                "___toast_error.html", message="Cannot post empty content"
-            )
-            return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 400
+        # ---------------- Validate content ----------------
+        if not post_text and post_image_path == "":
+            return jsonify({"success": False, "error": "Cannot post empty content"}), 400
 
-        # ---------------- Insert DB ----------------
+        # ---------------- Insert into DB ----------------
         post_pk = uuid.uuid4().hex
         db, cursor = x.db()
         cursor.execute(
             """
-            INSERT INTO posts (post_pk, post_user_fk, post_message, post_total_likes, post_image_path)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO posts (post_pk, post_user_fk, post_message, post_total_likes, post_image_path, created_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
             """,
             (post_pk, user_pk, post_text, 0, post_image_path)
         )
         db.commit()
 
-        # ---------------- Render HTML ----------------
+        # ---------------- Prepare HTML ----------------
         tweet = {
             "user_first_name": user["user_first_name"],
             "user_last_name": user["user_last_name"],
@@ -623,9 +621,7 @@ def api_create_post():
 
         html_post_container = render_template("___post_container.html")
         html_post = render_template("_tweet.html", tweet=tweet, user=user)
-        toast_ok = render_template(
-            "___toast_ok.html", message="The world is reading your post!"
-        )
+        toast_ok = render_template("___toast_ok.html", message="The world is reading your post!")
 
         return f"""
             <browser mix-bottom="#toast">{toast_ok}</browser>
@@ -634,15 +630,13 @@ def api_create_post():
         """
 
     except Exception as ex:
-        if "db" in locals(): db.rollback()
+        if db: db.rollback()
         traceback.print_exc()
-        toast_error = render_template(
-            "___toast_error.html", message="System under maintenance"
-        )
-        return f"<browser mix-bottom='#toast'>{toast_error}</browser>", 500
+        return jsonify({"success": False, "error": str(ex)}), 500
+
     finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+        if cursor: cursor.close()
+        if db: db.close()
 
 # ###############################
 # UPDATE POST
