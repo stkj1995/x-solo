@@ -1,39 +1,33 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+import secrets
 
-##############################
+def generate_verification_key():
+    """Generate a 32-character hex verification key"""
+    return secrets.token_hex(16)
+
 def send_verify_email(to_email, user_verification_key):
     try:
-        # Create a gmail fullflaskdemomail
-        # Enable (turn on) 2 step verification/factor in the google account manager
-        # Visit: https://myaccount.google.com/apppasswords
-        # Copy the key : pdru ctfd jdhk xxci
+        sender_email = "sophieteinvigkjer@gmail.com"
+        password = "tsmmiisuacbvzppl"  # App Password
 
-        # Email and password of the sender's Gmail account
-        sender_email = "soph1155@stud.ek.dk"
-        password = "tsmmiisuacbvzppl"  # If 2FA is on, use an App Password instead
-
-        # Receiver email address
-        receiver_email = to_email
-        
-        # Create the email message
         message = MIMEMultipart()
-        message["From"] = "My company name"
-        message["To"] = receiver_email
+        message["From"] = f"My Company <{sender_email}>"
+        message["To"] = to_email
         message["Subject"] = "Please verify your account"
 
-        # Body of the email
-        body = f"""To verify your account, please <a href="http://127.0.0.1/verify/{user_verification_key}">click here</a>"""
+        # Make sure the URL matches your Flask route
+        verification_link = f"http://127.0.0.1:5000/verify-account?key={user_verification_key}"
+        body = f"""<p>To verify your account, please <a href="{verification_link}">click here</a>.</p>"""
         message.attach(MIMEText(body, "html"))
 
-        # Connect to Gmail's SMTP server and send the email
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()  # Upgrade the connection to secure
+            server.starttls()
             server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, message.as_string())
-        print("Email sent successfully!")
+            server.sendmail(sender_email, to_email, message.as_string())
 
+        print("Email sent successfully!")
         return "email sent"
 
     except Exception as ex:

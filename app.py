@@ -5,6 +5,9 @@ from werkzeug.security import check_password_hash
 import uuid
 user_verification_key = uuid.uuid4().hex
 
+from markupsafe import escape
+import re
+
 import hashlib
 import base64
 
@@ -296,16 +299,16 @@ def login(lan="english"):
 @app.route("/signup", defaults={'lan': 'english'}, methods=["GET", "POST"])
 @app.route("/signup/<lan>", methods=["GET", "POST"])
 def signup(lan):
-    # Language handling
+    # --- Language handling ---
     if lan not in x.allowed_languages:
         lan = "english"
     x.default_language = lan
 
-    # GET = show signup page
+    # --- GET = show signup page ---
     if request.method == "GET":
         return render_template("signup.html", lan=lan)
 
-    # POST = process signup
+    # --- POST = process signup ---
     try:
         # Read data from JSON or form
         data = request.get_json(force=True) if request.is_json else request.form
@@ -314,21 +317,46 @@ def signup(lan):
         user_username = (data.get("user_username") or "").strip()
         user_first_name = (data.get("user_first_name") or "").strip()
 
-        # Validate required fields
+        # --- Required fields ---
         if not user_email or not user_password or not user_username or not user_first_name:
             raise Exception("All fields are required", 400)
 
-        # Hash password
+        # --- Email format ---
+        email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        if not re.match(email_pattern, user_email):
+            raise Exception("Invalid email format", 400)
+
+        # --- Password rules ---
+        if len(user_password) < 8:
+            raise Exception("Password must be at least 8 characters", 400)
+        if not re.search(r'\d', user_password):
+            raise Exception("Password must contain at least one number", 400)
+        if not re.search(r'[A-Z]', user_password):
+            raise Exception("Password must contain at least one uppercase letter", 400)
+        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', user_password):
+            raise Exception("Password must contain at least one symbol", 400)
+
+        # --- Username rules ---
+        if len(user_username) < 3 or len(user_username) > 20:
+            raise Exception("Username must be 3-20 characters", 400)
+        if not re.match(r'^\w+$', user_username):
+            raise Exception("Username can only contain letters, numbers, and underscores", 400)
+
+        # --- Sanitize inputs ---
+        user_first_name = escape(user_first_name)
+        user_username = escape(user_username)
+
+        # --- Hash password ---
         user_hashed_password = generate_password_hash(user_password)
 
-        # Generate user data
+        # --- Generate user data ---
         user_pk = uuid.uuid4().hex
         user_last_name = ""
         user_avatar_path = "https://avatar.iran.liara.run/public/40"
         user_verification_key = uuid.uuid4().hex
         user_verified_at = 0
 
-        # Insert into database
+        # --- Insert into database ---
         q = """INSERT INTO users 
         (user_pk, user_email, user_password, user_username, user_first_name,
          user_last_name, user_avatar_path, user_verification_key, user_verified_at)
@@ -342,25 +370,25 @@ def signup(lan):
         ))
         db.commit()
 
-        # Send verification email
+        # --- Send verification email ---
         email_html = render_template(
             "_email_verify_account.html",
             user_verification_key=user_verification_key
         )
         x.send_email(user_email, "Verify your account", email_html)
 
-        # Success → redirect to login
+        # --- Success → redirect to login ---
         return f"""<mixhtml mix-redirect="{url_for('login')}"></mixhtml>""", 200
 
     except Exception as ex:
         ic(ex)
 
-        # USER ERRORS (validation)
+        # --- USER ERRORS (validation) ---
         if len(ex.args) > 1 and ex.args[1] == 400:
             toast = render_template("___toast_error.html", message=ex.args[0])
             return f"""<mixhtml mix-update="#toast">{toast}</mixhtml>""", 400
 
-        # DATABASE ERRORS (duplicate email or username)
+        # --- DATABASE ERRORS (duplicate email or username) ---
         error_message = str(ex)
         if "Duplicate entry" in error_message:
             if user_email in error_message:
@@ -372,7 +400,7 @@ def signup(lan):
             toast = render_template("___toast_error.html", message=msg)
             return f"""<mixhtml mix-update='#toast'>{toast}</mixhtml>""", 400
 
-        # SYSTEM ERROR
+        # --- SYSTEM ERROR ---
         toast = render_template("___toast_error.html", message="System error. Try again later.")
         return f"""<mixhtml mix-bottom='#toast'>{toast}</mixhtml>""", 500
 
