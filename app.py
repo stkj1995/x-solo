@@ -341,12 +341,16 @@ def login(lan="english"):
                 raise Exception(dictionary.user_not_found[lan], 400)
 
             # --- Check password ---
+            print("Checking password...")
             if not check_password_hash(user["user_password"], user_password):
+                print("Password incorrect")
                 # Optional: track failed login attempts here for rate-limiting
                 raise Exception(dictionary.invalid_credentials[lan], 400)
 
             # --- Check email verification ---
+            print("Checking verification....")
             if user.get("user_verification_key", "") != "":
+                print("User not verified")
                 raise Exception(dictionary.user_not_verified[lan], 400)
 
             # --- Remove password and set session ---
@@ -370,6 +374,20 @@ def login(lan="english"):
         finally:
             if "cursor" in locals(): cursor.close()
             if "db_conn" in locals(): db_conn.close()
+
+#############################
+def send_verify_email(user_email, user_verification_key):
+    verification_link = f"http://127.0.0.1/verify-account?key={user_verification_key}"
+    subject = "Verify your account"
+    body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif;">
+        <p>Hi! Click below to verify your account:</p>
+        <a href="{verification_link}">Verify Account</a>
+      </body>
+    </html>
+    """
+    x.send_email(user_email, subject, body)
 
 ###########################
 @app.route("/signup", defaults={'lan': 'english'}, methods=["GET", "POST"])
@@ -447,11 +465,7 @@ def signup(lan):
         db.commit()
 
         # --- Send verification email ---
-        email_html = render_template(
-            "_email_verify_account.html",
-            user_verification_key=user_verification_key
-        )
-        x.send_email(user_email, "Verify your account", email_html)
+        send_verify_email(user_email, user_verification_key)
 
         # --- Success → redirect to login ---
         return f"""<mixhtml mix-redirect="{url_for('login')}"></mixhtml>""", 200

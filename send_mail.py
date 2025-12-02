@@ -19,7 +19,7 @@ def send_verify_email(to_email, user_verification_key):
         message["Subject"] = "Please verify your account"
 
         # Make sure the URL matches your Flask route
-        verification_link = f"http://127.0.0.1:5000/verify-account?key={user_verification_key}"
+        verification_link = f"http://127.0.0.1/verify-account?key={user_verification_key}"
         body = f"""<p>To verify your account, please <a href="{verification_link}">click here</a>.</p>"""
         message.attach(MIMEText(body, "html"))
 
@@ -37,7 +37,7 @@ def send_verify_email(to_email, user_verification_key):
     
 ####################################
 def send_reset_password_email(to_email, reset_token, user_first_name):
-    reset_link = f"http://127.0.0.1:5000/reset-password?token={reset_token}"
+    reset_link = f"http://127.0.0.1/reset-password?token={reset_token}"
     body = render_template("_email_forgot_password.html", reset_link=reset_link, user_first_name=user_first_name, user_email=to_email)
 
     sender_email = "sophieteinvigkjer@gmail.com"
@@ -69,7 +69,7 @@ def send_reset_password_email(to_email, reset_token, user_first_name="User"):
         message["Subject"] = "Reset your password"
 
         # Make sure the URL matches your Flask reset-password route
-        reset_link = f"http://127.0.0.1:5000/reset-password?token={reset_token}"
+        reset_link = f"http://127.0.0.1/reset-password?token={reset_token}"
 
         # HTML body of the email
         body = f"""
