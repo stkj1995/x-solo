@@ -70,12 +70,36 @@
           Sign up
         </button>
       </form>
+
+      <!-- Forgot Password Link -->
+      <p class="mt-4 text-sm text-gray-600">
+        Forgot your password?
+        <a href="{{ url_for('reset_password') }}">Reset it here</a>
+      </p>
+
+      <!-- Forgot Password Modal/Form -->
+      <div class="x-dialog hidden" id="forgotPasswordDialog" role="dialog" aria-modal="true"
+        aria-labelledby="forgotTitle">
+        <div class="x-dialog__overlay"></div>
+        <div class="x-dialog__content max-w-lg mx-auto bg-white p-8 rounded-lg shadow-md">
+          <button type="button" class="x-dialog__close" aria-label="Close">&times;</button>
+          <h2 id="forgotTitle" class="text-2xl font-bold mb-4">Forgot Password</h2>
+          <form class="x-dialog__form" action="{{ url_for('forgot_password') }}" method="POST" autocomplete="off">
+            <label for="forgot_email" class="block mb-2 font-semibold">Email</label>
+            <input type="email" name="user_email" id="forgot_email" class="w-full mb-4 p-2 border rounded" required>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Send Reset Link
+            </button>
+          </form>
+        </div>
+      </div>
+
+
       <p class="x-dialog__alt">
         Have an account?
         <a href="{{ url_for('login') }}">Log in</a>
       </p>
     </div>
-
 
   </div>
 

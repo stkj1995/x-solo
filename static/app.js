@@ -241,3 +241,22 @@ burger.addEventListener("click", () => {
     burger.classList.toggle("open");
 });
 
+// ------------------ Forgot Password Modal ------------------
+const forgotLink = document.getElementById("forgotPasswordLink");
+const forgotDialog = document.getElementById("forgotPasswordDialog");
+const forgotClose = forgotDialog?.querySelector(".x-dialog__close");
+
+forgotLink?.addEventListener("click", (e) => {
+    e.preventDefault();
+    forgotDialog.classList.remove("hidden");
+});
+
+forgotClose?.addEventListener("click", () => {
+    forgotDialog.classList.add("hidden");
+});
+
+// Close modal on overlay click
+forgotDialog?.querySelector(".x-dialog__overlay")?.addEventListener("click", () => {
+    forgotDialog.classList.add("hidden");
+});
+

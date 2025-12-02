@@ -282,3 +282,12 @@ def send_email(to_email, subject, template):
         raise Exception("cannot send email", 500)
     finally:
         pass
+
+###############################
+def generate_reset_token():
+    import uuid
+    return str(uuid.uuid4())
+
+def token_expired(expiry):
+    import datetime
+    return datetime.datetime.now() > expiry

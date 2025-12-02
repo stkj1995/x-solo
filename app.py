@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify, flash
 from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 import uuid
 user_verification_key = uuid.uuid4().hex
+verify_token = str(uuid.uuid4())
 
 from markupsafe import escape
 import re
@@ -31,6 +32,8 @@ def verify_scrypt_password(stored, provided):
     )
     return test_hash == stored_hash
 
+from itsdangerous import URLSafeTimedSerializer
+
 import gspread
 import requests
 import json
@@ -51,6 +54,8 @@ ic.configureOutput(prefix=f'----- | ', includeContext=True)
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
+app.secret_key = "SECRET_KEY"
+s = URLSafeTimedSerializer(app.secret_key)
 
 # Set the maximum file size to 10 MB
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024   # 1 MB
@@ -1010,7 +1015,6 @@ def api_unfollow():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
 # DELETE USER
 @app.post("/delete-user")
 def delete_user():
@@ -1052,3 +1056,92 @@ def delete_user():
     finally:
         cursor.close()
         db.close()
+
+######################################
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "GET":
+        return render_template("forgot_password.html")
+
+    if request.method == "POST":
+        try:
+            user_email = (request.form.get("user_email") or "").strip()
+            if not user_email:
+                raise Exception("Email is required", 400)
+
+            # Validate email format
+            if not re.match(x.REGEX_EMAIL, user_email):
+                raise Exception("Invalid email format", 400)
+
+            # Fetch user
+            db_conn, cursor = x.db()
+            cursor.execute("SELECT * FROM users WHERE user_email = %s", (user_email,))
+            user = cursor.fetchone()
+            if not user:
+                raise Exception("User not found", 400)
+
+            # Generate token + expiry
+            import uuid, datetime
+            reset_token = str(uuid.uuid4())
+            expiry = datetime.datetime.now() + datetime.timedelta(hours=1)
+
+            cursor.execute(
+                "UPDATE users SET reset_token=%s, reset_expiry=%s WHERE user_email=%s",
+                (reset_token, expiry, user_email)
+            )
+            db_conn.commit()
+
+            # Send email
+            from send_mail import send_reset_password_email
+            send_reset_password_email(user_email, reset_token, user.get("user_first_name", "User"))
+
+            return "Check your email for reset link!"
+
+        except Exception as ex:
+            ic(ex)
+            return str(ex), 400
+
+        finally:
+            if "cursor" in locals(): cursor.close()
+            if "db_conn" in locals(): db_conn.close()
+
+##################################
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if request.method == "GET":
+        token = request.args.get("token")
+        return render_template("reset_password.html", token=token)
+
+    if request.method == "POST":
+        try:
+            token = request.form.get("token")
+            new_password = request.form.get("password")
+
+            if not token or not new_password:
+                raise Exception("Token and password required", 400)
+
+            db_conn, cursor = x.db()
+            cursor.execute("SELECT reset_expiry FROM users WHERE reset_token=%s", (token,))
+            row = cursor.fetchone()
+
+            import datetime
+            if not row or datetime.datetime.now() > row["reset_expiry"]:
+                raise Exception("Token expired or invalid", 400)
+
+            # Update password + clear token
+            from werkzeug.security import generate_password_hash
+            cursor.execute(
+                "UPDATE users SET user_password=%s, reset_token=NULL, reset_expiry=NULL WHERE reset_token=%s",
+                (generate_password_hash(new_password), token)
+            )
+            db_conn.commit()
+
+            return "Password updated successfully!"
+
+        except Exception as ex:
+            ic(ex)
+            return str(ex), 400
+
+        finally:
+            if "cursor" in locals(): cursor.close()
+            if "db_conn" in locals(): db_conn.close()
