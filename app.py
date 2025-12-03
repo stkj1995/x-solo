@@ -599,60 +599,52 @@ def profile():
         pass
 
 ###################################
-@app.route("/toggle-like-tweet", methods=["PATCH"])
+@app.route("/toggle-like-tweet", methods=["PATCH", "POST"])
 def toggle_like_tweet():
     try:
         user = session.get("user")
+        user_pk = user.get("user_pk")
         post_pk = request.form.get("post_pk")
-
-        if not user or not post_pk:
-            return "<mixhtml><mix-message>Missing user or post</mix-message></mixhtml>", 400
 
         db, cursor = x.db()
 
-        # Tjek om brugeren allerede har liket
+        # Check like
         cursor.execute(
             "SELECT * FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
-            (user, post_pk)
+            (user_pk, post_pk)
         )
         liked = cursor.fetchone()
 
         if liked:
-            # UNLIKE
             cursor.execute(
                 "DELETE FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
-                (user, post_pk)
+                (user_pk, post_pk)
             )
         else:
-            # LIKE
-            new_pk = x.generate_pk()
             cursor.execute(
-                "INSERT INTO likes (like_pk, like_user_fk, like_post_fk) VALUES (%s, %s, %s)",
-                (new_pk, user, post_pk)
+                "INSERT INTO likes (like_pk, like_user_fk, like_post_fk) VALUES (UUID(), %s, %s)",
+                (user_pk, post_pk)
             )
 
         db.commit()
 
-        # Hent likes igen
         cursor.execute(
             "SELECT COUNT(*) AS total FROM likes WHERE like_post_fk=%s",
             (post_pk,)
         )
-        total_likes = cursor.fetchone()["total"]
+        total = cursor.fetchone()["total"]
 
-        # Vælg den rigtige knap
-        template_name = "___button_unlike_tweet.html" if not liked else "___button_like_tweet.html"
-
-        button_html = render_template(
-            template_name,
+        # IMPORTANT: triple underscore!!!
+        new_button_html = render_template(
+            "___button_unlike_tweet.html" if not liked else "___button_like_tweet.html",
             post_pk=post_pk,
-            post_total_likes=total_likes
+            post_total_likes=total
         )
 
         return f"""
         <mixhtml>
             <mix-target query="[data-like-button='{post_pk}']">
-                {button_html}
+                {new_button_html}
             </mix-target>
         </mixhtml>
         """
@@ -660,7 +652,6 @@ def toggle_like_tweet():
     except Exception as e:
         print("LIKE ERROR:", e)
         return f"<mixhtml><mix-message>{e}</mix-message></mixhtml>", 500
-
 
 ##############################
 @app.route("/api-create-post", methods=["POST"])
