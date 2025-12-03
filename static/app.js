@@ -12,20 +12,14 @@ async function createPost(formId, postsContainerId) {
     const container = document.getElementById(postsContainerId);
     const formData = new FormData(form);
 
-    try {
-        const res = await fetch("/api-create-post", {
-            method: "POST",
-            body: formData,
-            credentials: "same-origin"
-        });
-        const html = await res.text();
-        container.insertAdjacentHTML("afterbegin", html);
-        form.reset();
-        console.log("Post created successfully!");
-    } catch (err) {
-        console.error("Create post error:", err);
-        alert("Could not create post. Check console.");
-    }
+    const res = await fetch("/api-create-post", {
+        method: "POST",
+        body: formData
+    });
+
+    const html = await res.text();
+    container.insertAdjacentHTML("afterbegin", html);
+    form.reset();
 }
 
 document.getElementById("post_container")?.addEventListener("submit", function(e){
@@ -39,33 +33,42 @@ function editPost(post_pk, currentText) {
     const postDiv = document.getElementById(`post_${post_pk}`);
     if (!postDiv) return;
 
-    // Hide original text
+    const content = postDiv.querySelector(".post-content");
     const textEl = postDiv.querySelector(".text");
+
+    // Hide original text
     if (textEl) textEl.style.display = "none";
 
-    // Add textarea for editing
+    // Create textarea if not already created
     let textarea = postDiv.querySelector(".edit-textarea");
     if (!textarea) {
         textarea = document.createElement("textarea");
         textarea.className = "edit-textarea w-full border rounded p-2 mt-2";
         textarea.id = `edit_text_${post_pk}`;
-        textarea.value = currentText;
-        postDiv.querySelector(".post-content").appendChild(textarea);
+        textarea.value = currentText || "";
+        content.appendChild(textarea);
     }
 
-    // Add Save & Cancel buttons
+    // Create Save + Cancel buttons if not already created
     let btnContainer = postDiv.querySelector(".edit-buttons");
     if (!btnContainer) {
         btnContainer = document.createElement("div");
-        btnContainer.className = "edit-buttons mt-2";
+        btnContainer.className = "edit-buttons flex gap-2 mt-2";
+
         btnContainer.innerHTML = `
-            <button type="button" onclick="savePost('${post_pk}')">Save</button>
-            <button type="button" onclick="cancelEdit('${post_pk}')">Cancel</button>
+            <button type="button" class="px-3 py-1 bg-blue-500 text-white rounded"
+                onclick="savePost('${post_pk}')">Save</button>
+
+            <button type="button" class="px-3 py-1 bg-gray-300 text-black rounded"
+                onclick="cancelEdit('${post_pk}')">Cancel</button>
         `;
-        postDiv.querySelector(".post-content").appendChild(btnContainer);
+
+        content.appendChild(btnContainer);
     }
 }
 
+// ########################
+// SAVE POST
 async function savePost(post_pk) {
     const postDiv = document.getElementById(`post_${post_pk}`);
     const textarea = postDiv.querySelector(".edit-textarea");
@@ -81,13 +84,26 @@ async function savePost(post_pk) {
             credentials: "same-origin"
         });
         const data = await res.json();
+
         if (data.success) {
-            const textEl = postDiv.querySelector(".text");
-            if (textEl) {
-                textEl.textContent = data.post_message;
-                textEl.style.display = "block";
+            // Find existing text element
+            let textEl = postDiv.querySelector(".text");
+
+            // If no text element existed (image-only post), create one
+            if (!textEl) {
+                textEl = document.createElement("p");
+                textEl.className = "text mt-2";
+
+                // Insert it before the post actions
+                const actions = postDiv.querySelector(".post-actions");
+                postDiv.querySelector(".post-content").insertBefore(textEl, actions);
             }
-            // Remove edit UI
+
+            // Update text content and show it
+            textEl.textContent = data.post_message;
+            textEl.style.display = "block";
+
+            // Cleanup edit UI
             textarea.remove();
             postDiv.querySelector(".edit-buttons")?.remove();
         } else {
@@ -98,11 +114,13 @@ async function savePost(post_pk) {
     }
 }
 
+// ########################
+// CANCEL EDIT
 function cancelEdit(post_pk) {
     const postDiv = document.getElementById(`post_${post_pk}`);
-    const textarea = postDiv.querySelector(".edit-textarea");
-    if (textarea) textarea.remove();
+    postDiv.querySelector(".edit-textarea")?.remove();
     postDiv.querySelector(".edit-buttons")?.remove();
+
     const textEl = postDiv.querySelector(".text");
     if (textEl) textEl.style.display = "block";
 }
@@ -260,3 +278,43 @@ forgotDialog?.querySelector(".x-dialog__overlay")?.addEventListener("click", () 
     forgotDialog.classList.add("hidden");
 });
 
+// ###########################
+  document.querySelectorAll(".like-button").forEach(button => {
+    button.addEventListener("click", async (e) => {
+      e.preventDefault(); // Prevent any default behavior
+
+      const postId = button.dataset.post;
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("post_pk", postId);
+
+      try {
+        const response = await fetch("/like-tweet", {
+          method: "PATCH",
+          credentials: "same-origin",
+          body: formData
+        });
+
+        // Check if response is ok
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Toggle heart icon
+          const icon = button.querySelector("i.fa-heart");
+          icon.classList.toggle("fa-regular");
+          icon.classList.toggle("fa-solid");
+
+          // Update like count
+          const likesSpan = button.querySelector(".post-likes");
+          if (likesSpan) likesSpan.textContent = data.post_total_likes;
+        } else {
+          console.error("Server error:", data.error);
+        }
+      } catch (err) {
+        console.error("Error toggling like:", err);
+      }
+    });
+  });

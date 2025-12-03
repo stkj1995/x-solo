@@ -524,35 +524,28 @@ def verify_account():
         if "db" in locals(): db.close()
 
 # HOME #############################
-@app.get("/home")
-@x.no_cache
+@app.route("/home")
 def home():
+    user = session.get("user")  # logged-in user
     try:
-        user = session.get("user", "")
-        if not user: return redirect(url_for("login"))
         db, cursor = x.db()
-        q = "SELECT * FROM users JOIN posts ON user_pk = post_user_fk ORDER BY RAND() LIMIT 5"
-        cursor.execute(q)
+        cursor.execute("""
+            SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path, p.post_total_likes, p.created_at,
+                   u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
+            FROM posts p
+            JOIN users u ON p.post_user_fk = u.user_pk
+            ORDER BY p.created_at DESC
+        """)
         tweets = cursor.fetchall()
-        ic(tweets)
 
-        q = "SELECT * FROM trends ORDER BY RAND() LIMIT 3"
-        cursor.execute(q)
-        trends = cursor.fetchall()
-        ic(trends)
+        # Make sure each tweet is a dict (Jinja likes dicts)
+        tweets = [dict(tweet) for tweet in tweets]
 
-        q = "SELECT * FROM users WHERE user_pk != %s ORDER BY RAND() LIMIT 3"
-        cursor.execute(q, (user["user_pk"],))
-        suggestions = cursor.fetchall()
-        ic(suggestions)
-
-        return render_template("home.html", tweets=tweets, trends=trends, suggestions=suggestions, user=user)
-    except Exception as ex:
-        ic(ex)
-        return "error"
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+    return render_template("home.html", tweets=tweets, user=user)
 
 ##############################
 @app.get("/logout")
@@ -605,214 +598,121 @@ def profile():
     finally:
         pass
 
-# LIKE TWEET #############################
-@app.patch("/like-tweet")
-@x.no_cache
-def api_like_tweet():
+#########################
+@app.route("/like-tweet", methods=["PATCH"])
+def toggle_like_tweet():
+    db, cursor = x.db()
     try:
-        button_unlike_tweet = render_template("___button_unlike_tweet.html")
-        return f"""
-            <mixhtml mix-replace="#button_1">
-                {button_unlike_tweet}
-            </mixhtml>
-        """
-    except Exception as ex:
-        ic(ex)
-        return "error"
-    finally:
-        # if "cursor" in locals(): cursor.close()
-        # if "db" in locals(): db.close()
-        pass
+        post_pk = request.form.get("post_pk")
+        user = session.get("user")  # Replace with session user
 
-# ###############################
-# CREATE POST
-# ###############################
-@app.route("/api-create-post", methods=["POST"])
-def api_create_post():
-    db = cursor = None
-    try:
-        # ---------------- User check ----------------
-        user = session.get("user")
-        if not user:
-            return jsonify({"success": False, "error": "User not logged in"}), 403
-        user_pk = user["user_pk"]
-
-        # ---------------- Text ----------------
-        post_text = request.form.get("post", "").strip()
-        if post_text:
-            try:
-                post_text = x.validate_post(post_text)
-            except Exception:
-                pass  # fallback validation
-
-            if len(post_text) < 1 or len(post_text) > 5000:
-                return jsonify({"success": False, "error": "Post must be 1-5000 characters"}), 400
-
-        # ---------------- File ----------------
-        post_image_path = ""
-        file = request.files.get("post_image")
-        if file and file.filename:
-            if allowed_file(file.filename):
-                # Make filename unique
-                filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
-                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                try:
-                    file.save(file_path)
-                    post_image_path = filename
-                except Exception as e:
-                    return jsonify({"success": False, "error": f"File save failed: {str(e)}"}), 500
-            else:
-                return jsonify({"success": False, "error": "File type not allowed"}), 400
-
-        # ---------------- Validate content ----------------
-        if not post_text and post_image_path == "":
-            return jsonify({"success": False, "error": "Cannot post empty content"}), 400
-
-        # ---------------- Insert into DB ----------------
-        post_pk = uuid.uuid4().hex
-        db, cursor = x.db()
+        # Check if already liked
         cursor.execute(
-            """
-            INSERT INTO posts (post_pk, post_user_fk, post_message, post_total_likes, post_image_path, created_at)
-            VALUES (%s, %s, %s, %s, %s, NOW())
-            """,
-            (post_pk, user_pk, post_text, 0, post_image_path)
+            "SELECT * FROM likes WHERE like_post_fk=%s AND like_user_fk=%s",
+            (post_pk, user)
         )
+        liked = cursor.fetchone()
+
+        if liked:
+            # Unlike
+            cursor.execute(
+                "DELETE FROM likes WHERE like_post_fk=%s AND like_user_fk=%s",
+                (post_pk, user)
+            )
+            cursor.execute(
+                "UPDATE posts SET post_total_likes = post_total_likes - 1 WHERE post_pk=%s",
+                (post_pk,)
+            )
+        else:
+            # Like
+            cursor.execute(
+                "INSERT INTO likes (like_post_fk, like_user_fk) VALUES (%s, %s)",
+                (post_pk, user)
+            )
+            cursor.execute(
+                "UPDATE posts SET post_total_likes = post_total_likes + 1 WHERE post_pk=%s",
+                (post_pk,)
+            )
+
         db.commit()
 
-        # ---------------- Prepare HTML ----------------
-        tweet = {
-            "user_first_name": user["user_first_name"],
-            "user_last_name": user["user_last_name"],
-            "user_username": user["user_username"],
-            "user_avatar_path": user["user_avatar_path"],
-            "post_message": post_text,
-            "post_pk": post_pk,
-            "post_image_path": post_image_path
-        }
+        cursor.execute(
+            "SELECT post_total_likes FROM posts WHERE post_pk=%s",
+            (post_pk,)
+        )
+        total_likes = cursor.fetchone()["post_total_likes"]
 
-        html_post_container = render_template("___post_container.html")
-        html_post = render_template("_tweet.html", tweet=tweet, user=user)
-        toast_ok = render_template("___toast_ok.html", message="The world is reading your post!")
-
-        return f"""
-            <browser mix-bottom="#toast">{toast_ok}</browser>
-            <browser mix-top="#posts">{html_post}</browser>
-            <browser mix-replace="#post_container">{html_post_container}</browser>
-        """
-
-    except Exception as ex:
-        if db: db.rollback()
-        traceback.print_exc()
-        return jsonify({"success": False, "error": str(ex)}), 500
+        return {"success": True, "post_total_likes": total_likes}
 
     finally:
-        if cursor: cursor.close()
-        if db: db.close()
+        cursor.close()
+        db.close()
 
-# ###############################
-# UPDATE POST
-# ###############################
+#################################
 @app.route("/api-update-post/<post_pk>", methods=["POST"])
 def api_update_post(post_pk):
     user = session.get("user")
     if not user:
-        return jsonify({"success": False, "error": "User not logged in"}), 403
+        return jsonify({"success": False, "error": "Not logged in"}), 403
 
-    new_text = request.form.get("post_message", "").strip()
-    if not new_text:
-        return jsonify({"success": False, "error": "No content provided"}), 400
+    text = request.form.get("post_message", "").strip()
+    if not text:
+        return jsonify({"success": False, "error": "Empty content"}), 400
 
     try:
         db, cursor = x.db()
 
-        # Check if post exists and belongs to user
         cursor.execute("SELECT post_user_fk FROM posts WHERE post_pk=%s", (post_pk,))
         row = cursor.fetchone()
 
         if not row:
             return jsonify({"success": False, "error": "Post not found"}), 404
         if row["post_user_fk"] != user["user_pk"]:
-            return jsonify({"success": False, "error": "Not authorized"}), 403
+            return jsonify({"success": False, "error": "Not allowed"}), 403
 
-        # Safe to update
         cursor.execute(
-            "UPDATE posts SET post_message=%s WHERE post_pk=%s AND post_user_fk=%s",
-            (new_text, post_pk, user["user_pk"])
+            "UPDATE posts SET post_message=%s WHERE post_pk=%s",
+            (text, post_pk)
         )
         db.commit()
 
-        return jsonify({"success": True, "post_message": new_text})
+        return jsonify({"success": True, "post_message": text})
 
-    except Exception as e:
+    except Exception as ex:
         if "db" in locals(): db.rollback()
-        traceback.print_exc()
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": str(ex)}), 500
+
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-# API DELETE POST #############################
+##################################
 @app.route("/api-delete-post/<post_pk>", methods=["POST"])
 def api_delete_post(post_pk):
-    try:
-        user = session.get("user", "")
-        if not user:
-            return jsonify({"success": False, "error": "Invalid user"}), 403
-        user_pk = user["user_pk"]
+    user = session.get("user")
+    if not user:
+        return jsonify({"success": False, "error": "Not logged in"}), 403
 
+    try:
         db, cursor = x.db()
 
-        # Check if post exists and belongs to user
         cursor.execute("SELECT post_user_fk FROM posts WHERE post_pk=%s", (post_pk,))
         row = cursor.fetchone()
+
         if not row:
             return jsonify({"success": False, "error": "Post not found"}), 404
-        if row["post_user_fk"] != user_pk:
-            return jsonify({"success": False, "error": "Not authorized"}), 403
 
-        # Delete post
+        if row["post_user_fk"] != user["user_pk"]:
+            return jsonify({"success": False, "error": "Not allowed"}), 403
+
         cursor.execute("DELETE FROM posts WHERE post_pk=%s", (post_pk,))
         db.commit()
 
-        return jsonify({"success": True, "post_pk": post_pk})
+        return jsonify({"success": True})
 
     except Exception as ex:
         if "db" in locals(): db.rollback()
-        print("Delete post exception:", ex)   # 🔹 DEBUG: print real error
-        return jsonify({"success": False, "error": "Error deleting post"}), 500
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
-
-@app.route("/api-create-comment/<post_fk>", methods=["POST"])
-def api_create_comment(post_fk):
-    try:
-        user = session.get("user")
-        if not user:
-            return jsonify({"status": "error", "message": "Invalid user"}), 401
-
-        comment_text = x.validate_comment(request.form.get("comment_text", ""))
-        comment_pk = uuid.uuid4().hex
-        comment_created_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-
-        db, cursor = x.db()
-        cursor.execute(
-            "INSERT INTO comments (comment_pk, comment_text, post_fk, user_fk, comment_created_at) VALUES (%s, %s, %s, %s, %s)",
-            (comment_pk, comment_text, post_fk, user["user_pk"], comment_created_at)
-        )
-        db.commit()
-
-        return jsonify({
-            "status": "ok",
-            "user_first_name": user.get("user_first_name"),
-            "user_last_name": user.get("user_last_name")
-        })
-
-    except Exception as ex:
-        ic(ex)
-        return jsonify({"status": "error", "message": "Server error"}), 500
+        return jsonify({"success": False, "error": str(ex)}), 500
 
     finally:
         if "cursor" in locals(): cursor.close()

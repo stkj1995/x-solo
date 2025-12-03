@@ -191,8 +191,6 @@ def validate_comment(comment=""):
     return comment
 
 ##############################
-# VALIDATORS
-##############################
 def validate_user_email(lan="english"):
     user_email = request.form.get("user_email", "").strip().lower()
 
