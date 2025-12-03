@@ -281,39 +281,43 @@ forgotDialog?.querySelector(".x-dialog__overlay")?.addEventListener("click", () 
 // #############################
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Toggle comment form
-    document.querySelectorAll(".comment-toggle").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const postPk = btn.dataset.post;
-            const container = document.getElementById("comments_" + postPk);
-            container.style.display = container.style.display === "none" ? "block" : "none";
-        });
+    // Toggle comment form for any post
+    document.body.addEventListener("click", e => {
+        const btn = e.target.closest(".comment-toggle");
+        if (!btn) return;
+
+        const postPk = btn.dataset.post;
+        const container = document.getElementById("comments_" + postPk);
+        if (!container) return;
+
+        container.style.display = container.style.display === "none" ? "block" : "none";
     });
 
-    // Handle MixHTML success (AJAX)
-    document.addEventListener("mix:success", e => {
+    // Handle MixHTML success
+    document.body.addEventListener("mix:success", e => {
         const form = e.target;
         if (!form.classList.contains("comment-form")) return;
 
         const data = e.detail.data;
         if (data.success) {
-            const list = form.parentNode.querySelector(".comment-list");
+            const postPk = form.querySelector("input[name='post_fk']").value;
+            const list = document.querySelector(`#comments_${postPk} .comment-list`);
 
             const commentEl = document.createElement("div");
             commentEl.classList.add("comment");
             commentEl.innerHTML = `<strong>You:</strong> ${data.comment.comment_message} <span class="time">just now</span>`;
-
             list.appendChild(commentEl);
             form.querySelector("textarea[name='comment']").value = "";
 
-            // Update comment count
-            const toggleBtn = document.querySelector(`.comment-toggle[data-post='${data.comment.comment_post_fk}']`);
+            const toggleBtn = document.querySelector(`.comment-toggle[data-post='${postPk}']`);
             if (toggleBtn) {
                 let currentCount = parseInt(toggleBtn.textContent.trim()) || 0;
                 toggleBtn.innerHTML = `<i class="fa-regular fa-comment"></i> ${currentCount + 1}`;
             }
+
+            commentEl.scrollIntoView({ behavior: "smooth" });
         } else {
-            alert(data.error || "Error posting comment");
+            alert(data.error || "Failed to post comment");
         }
     });
 

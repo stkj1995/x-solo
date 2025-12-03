@@ -41,7 +41,7 @@
 
         <div class="post-actions">
             <span class="action comment-toggle" data-post="{{ tweet.post_pk }}">
-                <i class="fa-regular fa-comment"></i> 12
+                <i class="fa-regular fa-comment"></i> {{ tweet.comment_count or 0 }}
             </span>
             <span class="action"><i class="fa-solid fa-retweet"></i> 5</span>
 
@@ -61,15 +61,24 @@
             {% endif %}
         </div>
 
+        <!-- COMMENTS FORM WRAPPER (hidden by default) -->
         <div class="comments-container" id="comments_{{ tweet.post_pk }}">
-            <form class="comment-form" action="{{ url_for('api_create_comment') }}" method="POST" mix-post
-                data-post="{{ tweet.post_pk }}">
-                <textarea name="comment" placeholder="Write a comment..." maxlength="250"
-                    class="w-full pa-2 outline-1 outline-s-solid outline-c-gray:+50"></textarea>
-                <button type="submit" mix-default="Comment" mix-await="Commenting..."
-                    class="w-auto ml-auto mt-2 bg-c-black text-c-white py-2 px-12 rounded-xl">Comment</button>
+            <!-- Comment form -->
+            <form class="comment-form" action="{{ url_for('api_create_comment') }}" method="POST" mix-post>
+                <input type="hidden" name="post_fk" value="{{ tweet.post_pk }}">
+                <textarea name="comment" placeholder="Write a comment..." maxlength="250"></textarea>
+                <button type="submit" mix-default="Comment" mix-await="Commenting...">Comment</button>
             </form>
-            <div class="comment-list"></div>
+
+            <!-- Existing comments for old posts -->
+            <div class="comment-list">
+                {% for comment in tweet.comments %}
+                <div class="comment">
+                    <strong>{{ comment.user_first_name }}:</strong> {{ comment.comment_message }}
+                    <span class="time">{{ comment.created_at }}</span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
 
     </div>

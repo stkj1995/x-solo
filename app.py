@@ -1180,18 +1180,17 @@ def api_create_comment():
 
     post_fk = request.form.get("post_fk")
     comment_message = request.form.get("comment", "").strip()
-    if not comment_message:
-        return jsonify({"success": False, "error": "Comment cannot be empty"}), 400
+
+    if not post_fk or not comment_message:
+        return jsonify({"success": False, "error": "Missing post ID or comment"}), 400
 
     try:
         db, cursor = x.db()
-        import uuid, datetime
-        comment_pk = uuid.uuid4().hex
-        created_at = datetime.datetime.now()
 
+        comment_pk = uuid.uuid4().hex
         cursor.execute(
-            "INSERT INTO comments (comment_pk, comment_post_fk, comment_user_fk, comment_message, created_at) VALUES (%s,%s,%s,%s,%s)",
-            (comment_pk, post_fk, user["user_pk"], comment_message, created_at)
+            "INSERT INTO comments (comment_pk, comment_post_fk, comment_user_fk, comment_message, created_at) VALUES (%s, %s, %s, %s, NOW())",
+            (comment_pk, post_fk, user["user_pk"], comment_message)
         )
         db.commit()
 
@@ -1199,10 +1198,8 @@ def api_create_comment():
             "success": True,
             "comment": {
                 "comment_pk": comment_pk,
-                "comment_user_fk": user["user_pk"],
-                "comment_post_fk": post_fk,
                 "comment_message": comment_message,
-                "created_at": created_at.strftime("%Y-%m-%d %H:%M:%S")
+                "comment_user_fk": user["user_pk"]
             }
         })
 
