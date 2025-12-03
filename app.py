@@ -598,62 +598,69 @@ def profile():
     finally:
         pass
 
-#########################
+###################################
 @app.route("/toggle-like-tweet", methods=["PATCH"])
 def toggle_like_tweet():
-    db, cursor = x.db()
     try:
+        user = session.get("user")
         post_pk = request.form.get("post_pk")
-        user = session.get("user")  # Make sure session['user'] exists
 
-        if not post_pk or not user:
-            return {"success": False, "error": "Missing post or user"}, 400
+        if not user or not post_pk:
+            return "<mixhtml><mix-message>Missing user or post</mix-message></mixhtml>", 400
 
-        # Check if already liked
+        db, cursor = x.db()
+
+        # Tjek om brugeren allerede har liket
         cursor.execute(
-            "SELECT * FROM likes WHERE like_post_fk=%s AND like_user_fk=%s",
-            (post_pk, user)
+            "SELECT * FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
+            (user, post_pk)
         )
         liked = cursor.fetchone()
 
         if liked:
-            # Unlike
+            # UNLIKE
             cursor.execute(
-                "DELETE FROM likes WHERE like_post_fk=%s AND like_user_fk=%s",
-                (post_pk, user)
-            )
-            cursor.execute(
-                "UPDATE posts SET post_total_likes = post_total_likes - 1 WHERE post_pk=%s",
-                (post_pk,)
+                "DELETE FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
+                (user, post_pk)
             )
         else:
-            # Like
+            # LIKE
+            new_pk = x.generate_pk()
             cursor.execute(
-                "INSERT INTO likes (like_post_fk, like_user_fk) VALUES (%s, %s)",
-                (post_pk, user)
-            )
-            cursor.execute(
-                "UPDATE posts SET post_total_likes = post_total_likes + 1 WHERE post_pk=%s",
-                (post_pk,)
+                "INSERT INTO likes (like_pk, like_user_fk, like_post_fk) VALUES (%s, %s, %s)",
+                (new_pk, user, post_pk)
             )
 
         db.commit()
 
+        # Hent likes igen
         cursor.execute(
-            "SELECT post_total_likes FROM posts WHERE post_pk=%s",
+            "SELECT COUNT(*) AS total FROM likes WHERE like_post_fk=%s",
             (post_pk,)
         )
-        total_likes = cursor.fetchone()["post_total_likes"]
+        total_likes = cursor.fetchone()["total"]
 
-        return {"success": True, "post_total_likes": total_likes}
+        # Vælg den rigtige knap
+        template_name = "___button_unlike_tweet.html" if not liked else "___button_like_tweet.html"
+
+        button_html = render_template(
+            template_name,
+            post_pk=post_pk,
+            post_total_likes=total_likes
+        )
+
+        return f"""
+        <mixhtml>
+            <mix-target query="[data-like-button='{post_pk}']">
+                {button_html}
+            </mix-target>
+        </mixhtml>
+        """
 
     except Exception as e:
-        print("ERROR in toggle-like-tweet:", e)
-        return {"success": False, "error": str(e)}, 500
+        print("LIKE ERROR:", e)
+        return f"<mixhtml><mix-message>{e}</mix-message></mixhtml>", 500
 
-    finally:
-        cursor.close()
-        db.close()
 
 ##############################
 @app.route("/api-create-post", methods=["POST"])

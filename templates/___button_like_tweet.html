@@ -1,8 +1,4 @@
-<!-- <button title="like" id="button_1" class="action" mix-patch="/like-tweet">
+<button class="action like-button" mix-patch="/toggle-like-tweet" mix-body="post_pk={{ post_pk }}">
     <i class="fa-regular fa-heart"></i>
-</button> -->
-
-<button class="action like-button" data-post="{{ tweet.post_pk }}">
-    <i class="fa-heart fa-regular"></i>
-    <span class="post-likes">{{ tweet.post_total_likes }}</span>
+    <span class="post-likes">{{ post_total_likes }}</span>
 </button>
