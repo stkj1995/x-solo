@@ -16,7 +16,11 @@ ic.configureOutput(prefix=f'----- | ', includeContext=True)
 
 app = Flask(__name__)
 
-UPLOAD_ITEM_FOLDER = './images'
+import os
+
+# Base folder for user uploads (avatars and post images)
+UPLOAD_ITEM_FOLDER = os.path.join("static", "uploads")
+os.makedirs(UPLOAD_ITEM_FOLDER, exist_ok=True)
 
 ##############################
 # Multilanguage / Google Sheets setup

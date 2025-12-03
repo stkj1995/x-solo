@@ -37,25 +37,28 @@
                 <li><a href="#"><i class="fa-solid fa-users"></i><span>Communities</span></a></li>
                 <li><a href="#"><i class="fa-solid fa-star"></i><span>Premium</span></a></li>
                 <li><a href="/profile" mix-get mix-default="<i class='fa-regular fa-user'></i> Profile"
-                        mix-await="Loading ...">
-                        <i class="fa-regular fa-user"></i> <span class="pointer-e-none">Profile</span>
-                    </a></li>
+                        mix-await="Loading ..."><i class="fa-regular fa-user"></i> <span
+                            class="pointer-e-none">Profile</span></a></li>
                 <li><a href="#"><i class="fa-solid fa-ellipsis"></i><span>More</span></a></li>
                 <li><a href="{{ url_for('logout') }}"><i
                             class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></li>
             </ul>
+
             <button class="post-btn">Post</button>
 
             <div id="profile_tag">
-                {% set avatar = user.user_avatar_path or 'avatar_1.jpg' %}
-                <img src="{% if avatar.startswith('http') %}{{ avatar }}{% else %}{{ url_for('static', filename='images/' + avatar) }}{% endif %}"
-                    alt="Profile">
+                {% set avatar = user.user_avatar_path %}
+                <img src="{% if avatar and avatar.startswith('uploads/') %}{{ url_for('static', filename=avatar) }}
+                       {% elif avatar %}{{ url_for('static', filename='images/' + avatar) }}
+                       {% else %}{{ url_for('static', filename='images/avatar_1.jpg') }}{% endif %}" alt="Profile">
+
                 <div>
                     <div class="name">{{ user.user_first_name }}</div>
                     <div class="handle">@{{ user.user_username }}</div>
                 </div>
                 <i class="fa-solid fa-ellipsis option"></i>
             </div>
+
         </nav>
 
         <main class="px-8">
@@ -95,6 +98,7 @@
     <script>
         mojo()
     </script>
+
 </body>
 
 </html>

@@ -1,7 +1,15 @@
 <article class="post" id="post_{{ tweet.post_pk }}" mix-fade-in="5000">
 
-    <img src="{{ tweet.user_avatar_path or url_for('static', filename='images/avatar.jpg') }}" alt="Profile"
-        class="w-8 h-8 rounded-full">
+    {% set avatar = tweet.user_avatar_path %}
+    <img src="{% if avatar %}
+                {% if avatar.startswith('uploads/') %}
+                    {{ url_for('static', filename=avatar) }}
+                {% else %}
+                    {{ url_for('static', filename='images/' + avatar) }}
+                {% endif %}
+             {% else %}
+                {{ url_for('static', filename='images/avatar_1.jpg') }}
+             {% endif %}" alt="Profile" class="w-8 h-8 rounded-full">
 
     <div class="post-content">
         <div class="post-header">
@@ -32,7 +40,9 @@
         {% endif %}
 
         <div class="post-actions">
-            <span class="action"><i class="fa-regular fa-comment"></i> 12</span>
+            <span class="action comment-toggle" data-post="{{ tweet.post_pk }}">
+                <i class="fa-regular fa-comment"></i> 12
+            </span>
             <span class="action"><i class="fa-solid fa-retweet"></i> 5</span>
 
             {% if tweet.liked_by_user %}
@@ -40,7 +50,6 @@
             {% else %}
             {% include "___button_like_tweet.html" %}
             {% endif %}
-
 
             <span class="action"><i class="fa-solid fa-chart-simple"></i> 230</span>
             <span class="action"><i class="fa-solid fa-share"></i></span>
@@ -51,5 +60,17 @@
             <button onclick="deletePost('{{ tweet.post_pk }}')">Delete</button>
             {% endif %}
         </div>
+
+        <div class="comments-container" id="comments_{{ tweet.post_pk }}">
+            <form class="comment-form" action="{{ url_for('api_create_comment') }}" method="POST" mix-post
+                data-post="{{ tweet.post_pk }}">
+                <textarea name="comment" placeholder="Write a comment..." maxlength="250"
+                    class="w-full pa-2 outline-1 outline-s-solid outline-c-gray:+50"></textarea>
+                <button type="submit" mix-default="Comment" mix-await="Commenting..."
+                    class="w-auto ml-auto mt-2 bg-c-black text-c-white py-2 px-12 rounded-xl">Comment</button>
+            </form>
+            <div class="comment-list"></div>
+        </div>
+
     </div>
 </article>

@@ -2,53 +2,49 @@
 
 <form class="x-dialog__form" action="{{ url_for('api_update_profile') }}" mix-post autocomplete="off"
   enctype="multipart/form-data">
+
   <!-- Show current avatar -->
   <div class="current_avatar">
-    <!-- user.user_avatar_path is to be used to make it dynamic -->
-    <img src="{{ user.user_avatar_path or url_for('static', filename='images/avatar_2.jpg') }}"
-      alt="Current profile picture" class="avatar_preview" />
+    {% set avatar_path = user.user_avatar_path %}
+    <img class="avatar_preview"
+         src="{% if avatar_path.startswith('uploads/') %}{{ url_for('static', filename=avatar_path) }}{% elif avatar_path %}{{ url_for('static', filename='images/' + avatar_path) }}{% else %}{{ url_for('static', filename='images/avatar_2.jpg') }}{% endif %}"
+         alt="Current profile picture" />
   </div>
 
   <!-- Upload new image -->
   <div>
-    <label for="user_avatar">
-      <span>Profile picture</span>
-    </label>
-    <!-- will need to validate the input of files differently than mix-check cuz it's not a string -->
+    <label for="user_avatar"><span>Profile picture</span></label>
     <input name="useravatar" id="user_avatar" type="file" accept="image/*" />
   </div>
 
+  <!-- Email -->
   <div>
-    <label for="user_email">
-      <span>Email</span>
-    </label>
+    <label for="user_email"><span>Email</span></label>
     <input name="user_email" id="user_email" type="text" mix-check="{{ x.REGEX_EMAIL }}"
-      value="{{ user.user_email }}" />
+           value="{{ user.user_email }}" />
   </div>
+
+  <!-- Username -->
   <div>
-    <label for="user_username">
-      <span>Username</span> - {{ x.USER_USERNAME_MIN }} to {{
-      x.USER_USERNAME_MAX }} characters
-    </label>
+    <label for="user_username"><span>Username</span> - {{ x.USER_USERNAME_MIN }} to {{ x.USER_USERNAME_MAX }} characters</label>
     <input name="user_username" id="user_username" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
-      value="{{ user.user_username }}" />
+           value="{{ user.user_username }}" />
   </div>
+
+  <!-- First name -->
   <div>
-    <label for="user_first_name">
-      <span>User first name</span> - {{ x.USER_FIRST_NAME_MIN }} to {{
-      x.USER_FIRST_NAME_MAX }} characters
-    </label>
+    <label for="user_first_name"><span>First name</span> - {{ x.USER_FIRST_NAME_MIN }} to {{ x.USER_FIRST_NAME_MAX }} characters</label>
     <input name="user_first_name" id="user_first_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
-      value="{{ user.user_first_name }}" />
+           value="{{ user.user_first_name }}" />
   </div>
+
+  <!-- Last name -->
   <div>
-    <label for="user_last_name">
-      <span>User last name</span> - {{ x.USER_LAST_NAME_MIN }} to {{
-      x.USER_LAST_NAME_MAX }} characters
-    </label>
+    <label for="user_last_name"><span>Last name</span> - {{ x.USER_LAST_NAME_MIN }} to {{ x.USER_LAST_NAME_MAX }} characters</label>
     <input name="user_last_name" id="user_last_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
-      value="{{ user.user_last_name }}" />
+           value="{{ user.user_last_name }}" />
   </div>
+
   <button type="submit" class="x-dialog__btn" mix-default="Update profile" mix-await="Updating profile ...">
     Update profile
   </button>

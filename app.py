@@ -598,59 +598,85 @@ def profile():
     finally:
         pass
 
+# API UPDATE PROFILE #############################
+@app.route("/api-update-profile", methods=["POST"])
+def api_update_profile():
+    try:
+        # --- Get logged-in user ---
+        user = session.get("user")
+        if not user:
+            return "invalid user", 403
+
+        db, cursor = x.db()
+
+        # --- Validate inputs ---
+        user_email = x.validate_user_email()
+        user_username = x.validate_user_username()
+        user_first_name = x.validate_user_first_name()
+        user_last_name = x.validate_user_last_name()
+
+        # --- Check email uniqueness (ignore soft-deleted users) ---
+        cursor.execute(
+            "SELECT * FROM users WHERE user_email=%s AND user_pk!=%s AND is_deleted=0",
+            (user_email, user["user_pk"])
+        )
+        if cursor.fetchone():
+            raise Exception("Email already registered")
+
+        # --- Check username uniqueness ---
+        cursor.execute(
+            "SELECT * FROM users WHERE user_username=%s AND user_pk!=%s AND is_deleted=0",
+            (user_username, user["user_pk"])
+        )
+        if cursor.fetchone():
+            raise Exception("Username already taken")
+
+        # --- Handle avatar upload ---
+        avatar_file = request.files.get("useravatar")
+        if avatar_file and avatar_file.filename != "":
+            filename = f"{user['user_pk']}_{avatar_file.filename}"
+            avatar_path = os.path.join("uploads", filename)  # store relative path
+            full_path = os.path.join("static", avatar_path)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            avatar_file.save(full_path)
+        else:
+            avatar_path = user.get("user_avatar_path", "")  # keep old avatar
+
+        # --- Update database ---
+        q = """UPDATE users 
+               SET user_email=%s, user_username=%s, user_first_name=%s,
+                   user_last_name=%s, user_avatar_path=%s
+               WHERE user_pk=%s"""
+        cursor.execute(q, (user_email, user_username, user_first_name, user_last_name, avatar_path, user["user_pk"]))
+        db.commit()
+
+        # --- Update session ---
+        session["user"].update({
+            "user_email": user_email,
+            "user_username": user_username,
+            "user_first_name": user_first_name,
+            "user_last_name": user_last_name,
+            "user_avatar_path": avatar_path
+        })
+
+        # --- Response to frontend ---
+        toast_ok = render_template("___toast_ok.html", message="Profile updated successfully")
+        return f"""
+            <browser mix-bottom="#toast">{toast_ok}</browser>
+            <browser mix-update="#profile_tag .name">{user_first_name}</browser>
+            <browser mix-update="#profile_tag .handle">{user_username}</browser>
+        """, 200
+
+    except Exception as ex:
+        ic(ex)
+        toast_error = render_template("___toast_error.html", message=str(ex))
+        return f"""<mixhtml mix-update="#toast">{toast_error}</mixhtml>""", 400
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
 ###################################
-# @app.route("/toggle-like-tweet", methods=["PATCH", "POST"])
-# def toggle_like_tweet():
-#     try:
-#         user = session.get("user")
-#         user_pk = user.get("user_pk")
-#         post_pk = request.form.get("post_pk")
-
-#         db, cursor = x.db()
-
-#         cursor.execute(
-#             "SELECT * FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
-#             (user_pk, post_pk)
-#         )
-#         liked = cursor.fetchone()
-
-#         if liked:
-#             cursor.execute(
-#                 "DELETE FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
-#                 (user_pk, post_pk)
-#             )
-#         else:
-#             cursor.execute(
-#                 "INSERT INTO likes (like_pk, like_user_fk, like_post_fk) VALUES (UUID(), %s, %s)",
-#                 (user_pk, post_pk)
-#             )
-
-#         db.commit()
-
-#         cursor.execute(
-#             "SELECT COUNT(*) AS total FROM likes WHERE like_post_fk=%s",
-#             (post_pk,)
-#         )
-#         total = cursor.fetchone()["total"]
-
-#         new_button_html = render_template(
-#             "___button_unlike_tweet.html" if not liked else "___button_like_tweet.html",
-#             post_pk=post_pk,
-#             post_total_likes=total
-#         )
-
-#         return f"""
-#         <mixhtml>
-#             <mix-target query="[data-like-button='{post_pk}']">
-#                 {new_button_html}
-#             </mix-target>
-#         </mixhtml>
-#         """
-
-#     except Exception as e:
-#         print("LIKE ERROR:", e)
-#         return f"<mixhtml><mix-message>{e}</mix-message></mixhtml>", 500
-
 @app.route("/toggle-like-tweet", methods=["POST", "PATCH"])
 def toggle_like_tweet():
     try:
@@ -713,7 +739,6 @@ def toggle_like_tweet():
     finally:
         cursor.close()
         db.close()
-
 
 ##############################
 @app.route("/api-create-post", methods=["POST"])
@@ -849,56 +874,6 @@ def api_delete_post(post_pk):
     except Exception as ex:
         if "db" in locals(): db.rollback()
         return jsonify({"success": False, "error": str(ex)}), 500
-
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
-
-# API UPDATE PROFILE #############################
-@app.route("/api-update-profile", methods=["POST"])
-def api_update_profile():
-
-    try:
-        user = session.get("user", "")
-        if not user: return "invalid user"
-
-        # Validate
-        user_email = x.validate_user_email()
-        user_username = x.validate_user_username()
-        user_first_name = x.validate_user_first_name()
-
-        # Connect to the database
-        q = "UPDATE users SET user_email = %s, user_username = %s, user_first_name = %s WHERE user_pk = %s"
-        db, cursor = x.db()
-        cursor.execute(q, (user_email, user_username, user_first_name, user["user_pk"]))
-        db.commit()
-
-        # Response to the browser
-        toast_ok = render_template("___toast_ok.html", message="Profile updated successfully")
-        return f"""
-            <browser mix-bottom="#toast">{toast_ok}</browser>
-            <browser mix-update="#profile_tag .name">{user_first_name}</browser>
-            <browser mix-update="#profile_tag .handle">{user_username}</browser>
-            
-        """, 200
-    except Exception as ex:
-        ic(ex)
-        # User errors
-        if ex.args[1] == 400:
-            toast_error = render_template("___toast_error.html", message=ex.args[0])
-            return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
-        
-        # Database errors
-        if "Duplicate entry" and user_email in str(ex): 
-            toast_error = render_template("___toast_error.html", message="Email already registered")
-            return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
-        if "Duplicate entry" and user_username in str(ex): 
-            toast_error = render_template("___toast_error.html", message="Username already registered")
-            return f"""<mixhtml mix-update="#toast">{ toast_error }</mixhtml>""", 400
-        
-        # System or developer error
-        toast_error = render_template("___toast_error.html", message="System under maintenance")
-        return f"""<mixhtml mix-bottom="#toast">{ toast_error }</mixhtml>""", 500
 
     finally:
         if "cursor" in locals(): cursor.close()
@@ -1195,3 +1170,45 @@ def reset_password():
         finally:
             if "cursor" in locals(): cursor.close()
             if "db_conn" in locals(): db_conn.close()
+
+# api-create-comment
+@app.route("/api-create-comment", methods=["POST"])
+def api_create_comment():
+    user = session.get("user")
+    if not user:
+        return jsonify({"success": False, "error": "Not logged in"}), 403
+
+    post_fk = request.form.get("post_fk")
+    comment_message = request.form.get("comment", "").strip()
+    if not comment_message:
+        return jsonify({"success": False, "error": "Comment cannot be empty"}), 400
+
+    try:
+        db, cursor = x.db()
+        import uuid, datetime
+        comment_pk = uuid.uuid4().hex
+        created_at = datetime.datetime.now()
+
+        cursor.execute(
+            "INSERT INTO comments (comment_pk, comment_post_fk, comment_user_fk, comment_message, created_at) VALUES (%s,%s,%s,%s,%s)",
+            (comment_pk, post_fk, user["user_pk"], comment_message, created_at)
+        )
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "comment": {
+                "comment_pk": comment_pk,
+                "comment_user_fk": user["user_pk"],
+                "comment_post_fk": post_fk,
+                "comment_message": comment_message,
+                "created_at": created_at.strftime("%Y-%m-%d %H:%M:%S")
+            }
+        })
+
+    except Exception as e:
+        if "db" in locals(): db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
