@@ -1,6 +1,6 @@
 <article class="post" id="post_{{ tweet.post_pk }}" mix-fade-in="5000">
 
-    {# ---------- Avatar with fallback ---------- #}
+    {# ---------- Avatar ---------- #}
     {% set tweet_avatar = tweet.user_avatar_path or 'avatar.jpg' %}
     <img src="{{ tweet_avatar.startswith('http') 
                 and tweet_avatar 
@@ -14,12 +14,10 @@
             <span class="time">{{ tweet.post_time or '1d' }}</span>
         </div>
 
-        {# ---------- Post text ---------- #}
         {% if tweet.post_message %}
         <p class="text">{{ tweet.post_message }}</p>
         {% endif %}
 
-        {# ---------- Post image or video ---------- #}
         {% if tweet.post_image_path %}
         {% set filename = tweet.post_image_path %}
         {% set is_video = filename.endswith(('.mp4', '.webm')) %}
@@ -39,16 +37,16 @@
         {% endif %}
         {% endif %}
 
-        {# ---------- Post actions ---------- #}
         <div class="post-actions">
             <span class="action"><i class="fa-regular fa-comment"></i> 12</span>
             <span class="action"><i class="fa-solid fa-retweet"></i> 5</span>
 
-            <button title="like" class="action like-button" data-post="{{ tweet.post_pk }}"
-                data-liked="{{ '1' if tweet.liked_by_user else '0' }}" mix-patch="/toggle-like-tweet"
-                mix-method="PATCH">
-                <i class="fa-heart {{ 'fa-solid' if tweet.liked_by_user else 'fa-regular' }}"></i>
-            </button>
+            {# ---------- Include correct like/unlike button ---------- #}
+            {% if tweet.liked_by_user %}
+            {% include "___button_unlike_tweet.html" %}
+            {% else %}
+            {% include "___button_like_tweet.html" %}
+            {% endif %}
 
             <span class="action"><i class="fa-solid fa-chart-simple"></i> 230</span>
             <span class="action"><i class="fa-solid fa-share"></i></span>

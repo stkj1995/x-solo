@@ -2,7 +2,7 @@
     <i class="fa-regular fa-heart"></i>
 </button> -->
 
-<button class="action like-button" mix-patch="/like-tweet" mix-method="PATCH" mix-vals="post_pk={{ tweet.post_pk }}">
-    <i class="fa-heart {{ 'fa-solid' if tweet.liked_by_user else 'fa-regular' }}"></i>
+<button class="action like-button" data-post="{{ tweet.post_pk }}">
+    <i class="fa-heart fa-regular"></i>
     <span class="post-likes">{{ tweet.post_total_likes }}</span>
 </button>

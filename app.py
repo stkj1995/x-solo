@@ -599,12 +599,15 @@ def profile():
         pass
 
 #########################
-@app.route("/like-tweet", methods=["PATCH"])
+@app.route("/toggle-like-tweet", methods=["PATCH"])
 def toggle_like_tweet():
     db, cursor = x.db()
     try:
         post_pk = request.form.get("post_pk")
-        user = session.get("user")  # Replace with session user
+        user = session.get("user")  # Make sure session['user'] exists
+
+        if not post_pk or not user:
+            return {"success": False, "error": "Missing post or user"}, 400
 
         # Check if already liked
         cursor.execute(
@@ -644,9 +647,82 @@ def toggle_like_tweet():
 
         return {"success": True, "post_total_likes": total_likes}
 
+    except Exception as e:
+        print("ERROR in toggle-like-tweet:", e)
+        return {"success": False, "error": str(e)}, 500
+
     finally:
         cursor.close()
         db.close()
+
+##############################
+@app.route("/api-create-post", methods=["POST"])
+def api_create_post():
+    user = session.get("user")
+    if not user:
+        return jsonify({"success": False, "error": "Not logged in"}), 403
+
+    user_pk = user["user_pk"]
+
+    # ---------------- Text ----------------
+    post_text = request.form.get("post", "").strip()
+    if post_text:
+        try:
+            post_text = x.validate_post(post_text)
+        except Exception:
+            pass
+
+        if not (1 <= len(post_text) <= 5000):
+            return jsonify({"success": False, "error": "Post must be 1–5000 characters"}), 400
+
+    # ---------------- Image ----------------
+    post_image_path = ""
+    file = request.files.get("post_image")
+    if file and file.filename:
+        if not allowed_file(file.filename):
+            return jsonify({"success": False, "error": "Invalid file type"}), 400
+
+        filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+        post_image_path = filename
+
+    # ---------------- Validate content ----------------
+    if not post_text and not post_image_path:
+        return jsonify({"success": False, "error": "Cannot post empty content"}), 400
+
+    # ---------------- Insert into DB ----------------
+    post_pk = uuid.uuid4().hex
+
+    try:
+        db, cursor = x.db()
+        cursor.execute("""
+            INSERT INTO posts (post_pk, post_user_fk, post_message,
+                               post_image_path, post_total_likes, created_at)
+            VALUES (%s, %s, %s, %s, 0, NOW())
+        """, (post_pk, user_pk, post_text, post_image_path))
+        db.commit()
+
+        tweet = {
+            **user,
+            "post_pk": post_pk,
+            "post_message": post_text,
+            "post_image_path": post_image_path
+        }
+
+        html_post = render_template("_tweet.html", tweet=tweet, user=user)
+        return html_post
+
+    except Exception as ex:
+        if "db" in locals():
+            db.rollback()
+        return jsonify({"success": False, "error": str(ex)}), 500
+
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
 
 #################################
 @app.route("/api-update-post/<post_pk>", methods=["POST"])

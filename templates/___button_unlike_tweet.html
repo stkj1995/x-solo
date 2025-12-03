@@ -1,0 +1,8 @@
+<!-- <button title="unlike" id="button_1" class="action" mix-patch="/unlike-tweet">
+    <i class="fa-regular fa-heart"></i>
+</button> -->
+
+<button class="action like-button" data-post="{{ tweet.post_pk }}">
+    <i class="fa-heart fa-solid"></i>
+    <span class="post-likes">{{ tweet.post_total_likes }}</span>
+</button>
