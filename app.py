@@ -34,6 +34,7 @@ def verify_scrypt_password(stored, provided):
 
 from itsdangerous import URLSafeTimedSerializer
 
+import random
 import gspread
 import requests
 import json
@@ -550,6 +551,9 @@ def home():
         """)
         tweets = cursor.fetchall()
 
+        # Shuffle posts randomly
+        random.shuffle(tweets)
+
         # Fetch comments for each tweet
         for t in tweets:
             cursor.execute("""
@@ -571,7 +575,6 @@ def home():
 
     return render_template("home.html", tweets=tweets, user=user)
 
-
 # COMPONENT FOR AJAX UPDATES
 @app.get("/home-comp")
 def home_comp():
@@ -592,6 +595,9 @@ def home_comp():
             LIMIT 20
         """)
         tweets = cursor.fetchall()
+
+        # Shuffle posts randomly
+        random.shuffle(tweets)
 
         # Fetch comments + count
         for t in tweets:
