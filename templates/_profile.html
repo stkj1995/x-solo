@@ -33,7 +33,7 @@
   <!-- Username -->
   <div>
     <label for="user_username"><span>Username</span> - {{ x.USER_USERNAME_MIN }} to {{ x.USER_USERNAME_MAX }}
-      characters</label>
+      chars</label>
     <input name="user_username" id="user_username" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
       value="{{ user.user_username }}" />
   </div>
@@ -41,7 +41,7 @@
   <!-- First name -->
   <div>
     <label for="user_first_name"><span>First name</span> - {{ x.USER_FIRST_NAME_MIN }} to {{ x.USER_FIRST_NAME_MAX }}
-      characters</label>
+      chars</label>
     <input name="user_first_name" id="user_first_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
       value="{{ user.user_first_name }}" />
   </div>
@@ -49,7 +49,7 @@
   <!-- Last name -->
   <div>
     <label for="user_last_name"><span>Last name</span> - {{ x.USER_LAST_NAME_MIN }} to {{ x.USER_LAST_NAME_MAX }}
-      characters</label>
+      chars</label>
     <input name="user_last_name" id="user_last_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
       value="{{ user.user_last_name }}" />
   </div>
@@ -63,13 +63,6 @@
     Delete Account
   </button>
 
-  <!-- Restore User Button (for testing only) -->
-  <form action="{{ url_for('restore_user') }}" method="POST" class="mt-4">
-    <input type="hidden" name="user_pk" value="{{ user.user_pk }}">
-    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">
-      Restore User
-    </button>
-  </form>
 </form>
 
 <!-- Confirmation Modal -->
@@ -78,7 +71,7 @@
     <h2 class="text-xl font-semibold mb-4">Confirm Deletion</h2>
     <p class="mb-4">Are you sure you want to delete your account? This action cannot be undone.</p>
 
-    <form action="{{ url_for('delete_user') }}" method="POST">
+    <form action="{{ url_for('delete_user') }}" method="POST" mix-post mix-target="#deleteMessage">
       <input type="hidden" name="user_pk" value="{{ user.user_pk }}">
       <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded mr-2">Yes, Delete</button>
     </form>
@@ -86,3 +79,6 @@
     <button type="button" id="cancelDelete" class="bg-gray-200 px-4 py-2 rounded mt-2">No, Cancel</button>
   </div>
 </div>
+
+<!-- Target container for MixHTML response -->
+<div id="deleteMessage"></div>

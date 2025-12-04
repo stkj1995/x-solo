@@ -408,31 +408,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-});
-
-// #########################
+// ############################
 document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("deleteModal");
-  const btn = document.getElementById("deleteBtn");
-  const cancel = document.getElementById("cancelDelete");
+  const openBtn = document.getElementById("deleteBtn");
+  const cancelBtn = document.getElementById("cancelDeleteModal");
 
-  if (btn && modal && cancel) {
-    // Open modal
-    btn.addEventListener("click", () => {
-      modal.classList.remove("hidden");
-    });
+  // Open modal
+  openBtn.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+  });
 
-    // Close modal on cancel
-    cancel.addEventListener("click", () => {
-      modal.classList.add("hidden");
-    });
+  // Close modal
+  cancelBtn.addEventListener("click", () => {
+    modal.classList.add("hidden");
+  });
 
-    // Optional: close modal if clicking outside
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) {
-        modal.classList.add("hidden");
-      }
-    });
-  }
+  // Close if click outside modal content
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.add("hidden");
+  });
 });
-
+});

@@ -1114,7 +1114,7 @@ def api_unfollow():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-# DELETE USER (soft delete)
+# SOFT DELETE
 @app.post("/delete-user")
 def delete_user():
     user_pk = request.form.get("user_pk")
@@ -1128,35 +1128,29 @@ def delete_user():
         db.commit()
         # Log out
         session.pop("user", None)
-        return redirect(url_for("home"))
+        # Return small HTML fragment
+        return render_template("partials/deleted_message.html")
     finally:
         cursor.close()
         db.close()
 
-##################################
-# RESTORE USER (soft delete rollback)
+
+# RESTORE USER
 @app.post("/restore-user")
 def restore_user():
     user_pk = request.form.get("user_pk")
-
     if not user_pk:
         return "Invalid user ID", 400
 
     db, cursor = x.db()
     try:
-        cursor.execute(
-            "UPDATE users SET is_deleted = 0 WHERE user_pk = %s",
-            (user_pk,)
-        )
+        cursor.execute("UPDATE users SET is_deleted = 0 WHERE user_pk = %s", (user_pk,))
         db.commit()
-
-        return redirect(url_for("profile"))  # or wherever you want to go
-
+        return redirect(url_for("profile"))
     except Exception as ex:
         db.rollback()
         print("Error restoring user:", ex)
         return "An error occurred while restoring the user", 500
-
     finally:
         cursor.close()
         db.close()
