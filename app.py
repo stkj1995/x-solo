@@ -560,25 +560,89 @@ def logout():
         pass
 
 # HOME COMP #############################
+# @app.get("/home-comp")
+# def home_comp():
+#     try:
+
+#         user = session.get("user", "")
+#         if not user: return "error"
+#         db, cursor = x.db()
+#         q = "SELECT * FROM users JOIN posts ON user_pk = post_user_fk ORDER BY RAND() LIMIT 5"
+#         cursor.execute(q)
+#         tweets = cursor.fetchall()
+#         ic(tweets)
+
+#         html = render_template("_home_comp.html", tweets=tweets)
+#         return f"""<mixhtml mix-update="main">{ html }</mixhtml>"""
+#     except Exception as ex:
+#         ic(ex)
+#         return "error"
+#     finally:
+#         pass
+# HOME COMP #############################
 @app.get("/home-comp")
 def home_comp():
     try:
-
         user = session.get("user", "")
-        if not user: return "error"
-        db, cursor = x.db()
-        q = "SELECT * FROM users JOIN posts ON user_pk = post_user_fk ORDER BY RAND() LIMIT 5"
-        cursor.execute(q)
-        tweets = cursor.fetchall()
-        ic(tweets)
+        if not user:
+            return "error"
 
-        html = render_template("_home_comp.html", tweets=tweets)
-        return f"""<mixhtml mix-update="main">{ html }</mixhtml>"""
+        db, cursor = x.db()
+
+        # 1) Hent posts + user info
+        cursor.execute("""
+            SELECT 
+                p.post_pk,
+                p.post_user_fk,
+                p.post_message,
+                p.post_image_path,
+                p.created_at AS post_created_at,
+                u.user_first_name,
+                u.user_last_name,
+                u.user_username,
+                u.user_avatar_path
+            FROM posts p
+            JOIN users u ON u.user_pk = p.post_user_fk
+            ORDER BY p.created_at DESC
+            LIMIT 20
+        """)
+        tweets = cursor.fetchall()
+
+        # 2) For hvert post → hent comments + count
+        for t in tweets:
+            cursor.execute("""
+                SELECT 
+                    c.comment_pk,
+                    c.comment_post_fk,
+                    c.comment_user_fk,
+                    c.comment_message,
+                    c.created_at,
+                    u.user_first_name,
+                    u.user_last_name
+                FROM comments c
+                JOIN users u ON u.user_pk = c.comment_user_fk
+                WHERE c.comment_post_fk = %s
+                ORDER BY c.created_at ASC
+            """, (t["post_pk"],))
+            t["comments"] = cursor.fetchall() or []
+
+            cursor.execute("SELECT COUNT(*) AS cnt FROM comments WHERE comment_post_fk = %s", (t["post_pk"],))
+            row = cursor.fetchone()
+            t["comment_count"] = row["cnt"]
+
+            # Needed so _tweet.html doesn’t crash
+            t["liked_by_user"] = False  
+
+        html = render_template("_home_comp.html", tweets=tweets, user=user)
+        return f"""<mixhtml mix-update="main">{html}</mixhtml>"""
+
     except Exception as ex:
-        ic(ex)
+        print("Error in home_comp:", ex)
         return "error"
+
     finally:
-        pass
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 # PROFILE #############################
 @app.get("/profile")
@@ -1209,3 +1273,67 @@ def api_create_comment():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+# Edit comment
+@app.route("/api-edit-comment", methods=["POST"])
+def api_edit_comment():
+    user = session.get("user")
+    if not user:
+        return jsonify({"success": False, "error": "Not logged in"}), 403
+
+    data = request.get_json()
+    comment_pk = data.get("comment_pk")
+    new_message = data.get("comment_message", "").strip()
+
+    if not comment_pk or not new_message:
+        return jsonify({"success": False, "error": "Missing comment ID or message"}), 400
+
+    try:
+        db, cursor = x.db()
+        # Ensure only comment owner can edit
+        cursor.execute(
+            "UPDATE comments SET comment_message = %s WHERE comment_pk = %s AND comment_user_fk = %s",
+            (new_message, comment_pk, user["user_pk"])
+        )
+        db.commit()
+
+        return jsonify({"success": True, "comment_message": new_message})
+
+    except Exception as e:
+        if "db" in locals(): db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
+# Delete comment
+@app.route("/api-delete-comment", methods=["POST"])
+def api_delete_comment():
+    user = session.get("user")
+    if not user:
+        return jsonify({"success": False, "error": "Not logged in"}), 403
+
+    data = request.get_json()
+    comment_pk = data.get("comment_pk")
+    if not comment_pk:
+        return jsonify({"success": False, "error": "Missing comment ID"}), 400
+
+    try:
+        db, cursor = x.db()
+        # Ensure only comment owner can delete
+        cursor.execute(
+            "DELETE FROM comments WHERE comment_pk = %s AND comment_user_fk = %s",
+            (comment_pk, user["user_pk"])
+        )
+        db.commit()
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        if "db" in locals(): db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+

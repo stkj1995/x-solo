@@ -1,4 +1,7 @@
-<article class="post" id="post_{{ tweet.post_pk }}" mix-fade-in="5000">
+<!-- POST ARTICLE -->
+<article class="post border-b border-gray-200 p-4 mb-4 
+ bg-white shadow-sm" id="post_{{ tweet.post_pk }}"
+    data-user-pk="{{ tweet.post_user_fk }}" mix-fade-in="5000">
 
     {% set avatar = tweet.user_avatar_path %}
     <img src="{% if avatar %}
@@ -12,14 +15,14 @@
              {% endif %}" alt="Profile" class="w-8 h-8 rounded-full">
 
     <div class="post-content">
-        <div class="post-header">
+        <div class="post-header flex items-center space-x-2 text-sm text-gray-500 mb-1">
             <span class="name">{{ tweet.user_first_name }} {{ tweet.user_last_name }}</span>
             <span class="handle">@{{ tweet.user_username }}</span> ·
             <span class="time">{{ tweet.post_time or '1d' }}</span>
         </div>
 
         {% if tweet.post_message %}
-        <p class="text">{{ tweet.post_message }}</p>
+        <p class="text-gray-800 mb-2">{{ tweet.post_message }}</p>
         {% endif %}
 
         {% if tweet.post_image_path %}
@@ -27,7 +30,7 @@
         {% set is_video = filename.endswith(('.mp4', '.webm')) %}
 
         {% if is_video %}
-        <video controls class="w-80 rounded-md mt-2">
+        <video controls class="w-80 mt-2">
             <source
                 src="{{ filename.startswith('http') and filename or url_for('static', filename='uploads/' + filename) }}"
                 type="video/mp4">
@@ -35,15 +38,17 @@
         </video>
         {% else %}
         <img src="{{ filename.startswith('http') and filename or url_for('static', filename='uploads/' + filename) }}"
-            alt="Post media" class="w-80 rounded-md mt-2">
+            alt="Post media" class="w-80 mt-2">
         {% endif %}
         {% endif %}
 
-        <div class="post-actions">
-            <span class="action comment-toggle" data-post="{{ tweet.post_pk }}">
+        <!-- POST ACTIONS -->
+        <div class="post-actions items-center space-x-4 text-gray-500 text-sm mb-2">
+            <span class="action comment-toggle items-center space-x-1 hover:text-blue-500"
+                data-post="{{ tweet.post_pk }}">
                 <i class="fa-regular fa-comment"></i> {{ tweet.comment_count or 0 }}
             </span>
-            <span class="action"><i class="fa-solid fa-retweet"></i> 5</span>
+            <span class="action space-x-1 hover:text-green-500"><i class="fa-solid fa-retweet"></i> 5</span>
 
             {% if tweet.liked_by_user %}
             {% include "___button_unlike_tweet.html" %}
@@ -51,35 +56,44 @@
             {% include "___button_like_tweet.html" %}
             {% endif %}
 
-            <span class="action"><i class="fa-solid fa-chart-simple"></i> 230</span>
-            <span class="action"><i class="fa-solid fa-share"></i></span>
+            <span class="action space-x-1 hover:text-purple-500"><i class="fa-solid fa-chart-simple"></i> 230</span>
+            <span class="action space-x-1 hover:text-gray-700"><i class="fa-solid fa-share"></i></span>
 
             {% if tweet.post_user_fk == user.user_pk %}
-            <button
+            <button class="edit-post text-blue-500 hover:underline ml-2"
                 onclick="editPost('{{ tweet.post_pk }}', `{{ tweet.post_message|default('')|escape }}`)">Edit</button>
-            <button onclick="deletePost('{{ tweet.post_pk }}')">Delete</button>
+            <button class="delete-post text-red-500 hover:underline ml-1"
+                onclick="deletePost('{{ tweet.post_pk }}')">Delete</button>
             {% endif %}
         </div>
 
-        <!-- COMMENTS FORM WRAPPER (hidden by default) -->
-        <div class="comments-container" id="comments_{{ tweet.post_pk }}">
-            <!-- Comment form -->
-            <form class="comment-form" action="{{ url_for('api_create_comment') }}" method="POST" mix-post>
+        <!-- COMMENTS CONTAINER -->
+        <div class="comments-container mt-2 border-t border-gray-200 pt-2" id="comments_{{ tweet.post_pk }}">
+            <!-- COMMENT FORM -->
+            <form class="comment-form" data-post-pk="{{ tweet.post_pk }}">
                 <input type="hidden" name="post_fk" value="{{ tweet.post_pk }}">
                 <textarea name="comment" placeholder="Write a comment..." maxlength="250"></textarea>
-                <button type="submit" mix-default="Comment" mix-await="Commenting...">Comment</button>
+                <button type="submit"
+                    class="self-end bg-blue-500 text-white py-1 px-4 hover:bg-blue-600 transition">Comment</button>
             </form>
 
-            <!-- Existing comments for old posts -->
+            <!-- EXISTING COMMENTS -->
             <div class="comment-list">
                 {% for comment in tweet.comments %}
-                <div class="comment">
+                <div class="comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm"
+                    data-comment-pk="{{ comment.comment_pk }}">
                     <strong>{{ comment.user_first_name }}:</strong> {{ comment.comment_message }}
-                    <span class="time">{{ comment.created_at }}</span>
+                    <span class="time text-gray-400">{{ comment.created_at }}</span>
+
+                    {% if comment.comment_user_fk == user.user_pk %}
+                    <button class="edit-comment text-blue-500 hover:underline"
+                        onclick="editComment('{{ comment.comment_pk }}', `{{ comment.comment_message|escape }}`)">Edit</button>
+                    <button class="delete-comment text-red-500 hover:underline"
+                        onclick="deleteComment('{{ comment.comment_pk }}')">Delete</button>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
         </div>
-
     </div>
 </article>

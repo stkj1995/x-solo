@@ -1,5 +1,5 @@
-<form id="comment_container" action="{{ url_for('api_create_comment/', post_fk=tweet.post_pk') }}" mix-post
-  class="d-flex flex-col w-full ml-2">
+<form id="comment_container" action="{{ url_for('api_create_comment', post_fk=tweet.post_pk) }}" mix-post>
+  <input type="hidden" name="post_fk" value="{{ tweet.post_pk }}">
   <textarea name="comment" placeholder="What is new ?"
     class="w-full outline-1 outline-s-solid outline-c-gray:+50 pa-2"></textarea>
   <button type="submit" mix-default="Comment" mix-await="Commenting ..."

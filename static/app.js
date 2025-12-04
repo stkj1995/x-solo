@@ -281,44 +281,131 @@ forgotDialog?.querySelector(".x-dialog__overlay")?.addEventListener("click", () 
 // #############################
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Toggle comment form for any post
-    document.body.addEventListener("click", e => {
-        const btn = e.target.closest(".comment-toggle");
-        if (!btn) return;
+  // ----------------------------
+  // COMMENT SUBMIT HANDLER
+  // ----------------------------
+  document.body.addEventListener("submit", async (e) => {
+    const form = e.target;
+    if (!form.classList.contains("comment-form")) return;
 
-        const postPk = btn.dataset.post;
-        const container = document.getElementById("comments_" + postPk);
-        if (!container) return;
+    e.preventDefault(); // prevent full page reload
 
-        container.style.display = container.style.display === "none" ? "block" : "none";
-    });
+    const postPk = form.querySelector("input[name='post_fk']").value;
+    const commentMessage = form.querySelector("textarea[name='comment']").value.trim();
+    if (!commentMessage) return;
 
-    // Handle MixHTML success
-    document.body.addEventListener("mix:success", e => {
-        const form = e.target;
-        if (!form.classList.contains("comment-form")) return;
+    try {
+      const formData = new FormData();
+      formData.append("post_fk", postPk);
+      formData.append("comment", commentMessage);
 
-        const data = e.detail.data;
-        if (data.success) {
-            const postPk = form.querySelector("input[name='post_fk']").value;
-            const list = document.querySelector(`#comments_${postPk} .comment-list`);
+      const res = await fetch("/api-create-comment", {
+        method: "POST",
+        body: formData,
+      });
 
-            const commentEl = document.createElement("div");
-            commentEl.classList.add("comment");
-            commentEl.innerHTML = `<strong>You:</strong> ${data.comment.comment_message} <span class="time">just now</span>`;
-            list.appendChild(commentEl);
-            form.querySelector("textarea[name='comment']").value = "";
+      const data = await res.json();
 
-            const toggleBtn = document.querySelector(`.comment-toggle[data-post='${postPk}']`);
-            if (toggleBtn) {
-                let currentCount = parseInt(toggleBtn.textContent.trim()) || 0;
-                toggleBtn.innerHTML = `<i class="fa-regular fa-comment"></i> ${currentCount + 1}`;
-            }
+      if (data.success) {
+        // Append comment locally with Edit/Delete buttons
+        const list = document.querySelector(`#comments_${postPk} .comment-list`);
+        const commentEl = document.createElement("div");
+        commentEl.classList.add("comment");
+        commentEl.dataset.commentPk = data.comment.comment_pk;
+        commentEl.innerHTML = `
+          <strong>You:</strong> ${data.comment.comment_message}
+          <button class="edit-comment">Edit</button>
+          <button class="delete-comment">Delete</button>
+        `;
+        list.appendChild(commentEl);
 
-            commentEl.scrollIntoView({ behavior: "smooth" });
-        } else {
-            alert(data.error || "Failed to post comment");
+        // Clear textarea
+        form.querySelector("textarea[name='comment']").value = "";
+
+        // Update comment count in header
+        const toggleBtn = document.querySelector(`.comment-toggle[data-post='${postPk}']`);
+        if (toggleBtn) {
+          let currentCount = parseInt(toggleBtn.textContent.trim()) || 0;
+          toggleBtn.innerHTML = `<i class="fa-regular fa-comment"></i> ${currentCount + 1}`;
         }
-    });
+
+        // REMOVE scrollIntoView so page doesn't jump
+        // commentEl.scrollIntoView({ behavior: "smooth" });
+
+      } else {
+        alert(data.error || "Failed to post comment");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong posting the comment.");
+    }
+  });
+
+  // ----------------------------
+  // COMMENT EDIT / DELETE HANDLER
+  // ----------------------------
+  document.body.addEventListener("click", async (e) => {
+    const commentEl = e.target.closest(".comment");
+    if (!commentEl) return;
+
+    const commentPk = commentEl.dataset.commentPk;
+    const postContainer = commentEl.closest(".post");
+    const postPk = postContainer?.id.replace("post_", "");
+
+    // EDIT COMMENT
+    if (e.target.matches(".edit-comment")) {
+      const currentText = commentEl.querySelector("strong")?.nextSibling?.textContent?.trim() || "";
+      const newText = prompt("Edit your comment:", currentText);
+      if (!newText || newText.trim() === "" || newText === currentText) return;
+
+      try {
+        const res = await fetch("/api-edit-comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ comment_pk: commentPk, comment_message: newText })
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Replace comment text in place without reloading
+          commentEl.querySelector("strong").nextSibling.textContent = ` ${newText} `;
+        } else {
+          alert(data.error || "Failed to edit comment");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error editing comment");
+      }
+    }
+
+    // DELETE COMMENT
+    if (e.target.matches(".delete-comment")) {
+      if (!confirm("Delete this comment?")) return;
+
+      try {
+        const res = await fetch("/api-delete-comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ comment_pk: commentPk })
+        });
+        const data = await res.json();
+        if (data.success) {
+          commentEl.remove();
+
+          // Update comment count in header
+          const toggleBtn = document.querySelector(`.comment-toggle[data-post='${postPk}']`);
+          if (toggleBtn) {
+            let currentCount = parseInt(toggleBtn.textContent.trim()) || 1;
+            toggleBtn.innerHTML = `<i class="fa-regular fa-comment"></i> ${currentCount - 1}`;
+          }
+        } else {
+          alert(data.error || "Failed to delete comment");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error deleting comment");
+      }
+    }
+  });
 
 });
