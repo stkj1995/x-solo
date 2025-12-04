@@ -162,6 +162,18 @@ async function server(url, method, data_source_selector, function_after_fetch) {
 }
 
 // ##############################
+// Trigger search on Enter key
+const searchInput = document.querySelector("#txt_search_for");
+if (searchInput) {
+    searchInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();  // Prevent form submission / reload
+            doSearch();          // Trigger search
+        }
+    });
+}
+
+// Validate input and trigger search
 function doSearch() {
     const input = document.querySelector("#txt_search_for");
     const query = input.value.trim();
@@ -180,23 +192,26 @@ function doSearch() {
     })
     .then(res => res.json())
     .then(data => displayResults(data))
-    .catch(err => console.error(err));
+    .catch(err => console.error("Search error:", err));
 }
 
+// Render search results dynamically
 function displayResults(data) {
     const container = document.querySelector("#search_results");
+    if (!container) return;
+
     container.innerHTML = "";
 
-    if ((!data.users || data.users.length === 0) &&
-        (!data.posts || data.posts.length === 0) &&
-        (!data.trends || data.trends.length === 0)) {
-        container.innerHTML = "<p class='text-c-gray:+50'>No results found</p>";
-        container.classList.remove("d-none");
-        return;
-    }
+    let hasResults = false;
 
-    // Users
-    if (data.users) {
+    // ---------------- Users ----------------
+    if (data.users && data.users.length > 0) {
+        hasResults = true;
+        const usersHeader = document.createElement("div");
+        usersHeader.className = "font-bold mb-1";
+        usersHeader.textContent = "Users:";
+        container.appendChild(usersHeader);
+
         data.users.forEach(user => {
             const div = document.createElement("div");
             div.className = "d-flex a-items-center mb-2";
@@ -213,22 +228,44 @@ function displayResults(data) {
         });
     }
 
-    // Posts
-    if (data.posts) {
+    // ---------------- Posts ----------------
+    if (data.posts && data.posts.length > 0) {
+        hasResults = true;
+        const postsHeader = document.createElement("div");
+        postsHeader.className = "font-bold mt-2 mb-1";
+        postsHeader.textContent = "Posts:";
+        container.appendChild(postsHeader);
+
         data.posts.forEach(post => {
             const div = document.createElement("div");
-            div.className = "border-t border-c-gray:+20 mt-2 pt-2";
+            div.className = "border-t border-c-gray:+20 mt-1 pt-1";
             div.textContent = post.post_message;
             container.appendChild(div);
         });
     }
 
-    // Trends
-    if (data.trends) {
+    // ---------------- Trends ----------------
+    if (data.trends && data.trends.length > 0) {
+        hasResults = true;
+        const trendsHeader = document.createElement("div");
+        trendsHeader.className = "font-bold mt-2 mb-1";
+        trendsHeader.textContent = "Trends:";
+        container.appendChild(trendsHeader);
+
         const trendDiv = document.createElement("div");
-        trendDiv.className = "mt-2";
-        trendDiv.innerHTML = "<strong>Trends:</strong> " + data.trends.join(", ");
+        trendDiv.className = "flex flex-wrap gap-2";
+        data.trends.forEach(t => {
+            const span = document.createElement("span");
+            span.className = "px-2 py-1 bg-c-gray:+10 rounded-md text-sm";
+            span.textContent = t.trend_title || t;
+            trendDiv.appendChild(span);
+        });
         container.appendChild(trendDiv);
+    }
+
+    // ---------------- No results ----------------
+    if (!hasResults) {
+        container.innerHTML = "<p class='text-c-gray:+50'>No results found</p>";
     }
 
     container.classList.remove("d-none");

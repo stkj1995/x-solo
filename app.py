@@ -960,52 +960,46 @@ def api_delete_post(post_pk):
         if "db" in locals(): db.close()
 
 # API SEARCH #############################
-# API SEARCH #############################
-@app.post("/api-search-json")
+@app.route("/api-search-json", methods=["POST"])
 def api_search_json():
-    from flask import request, jsonify
-
     try:
-        data = request.get_json() or {}
+        data = request.get_json()
         search_for = data.get("search_for", "").strip()
 
-        # Validate input
-        if not search_for or len(search_for) > 100:
+        if not search_for:
             return jsonify({"users": [], "posts": [], "trends": []})
 
-        part_of_query = f"%{search_for}%"
+        db, cursor = x.db()  # your db connection
 
-        db, cursor = x.db()  # your DB connection
+        # ---------------- USERS ----------------
+        cursor.execute("""
+            SELECT user_pk, user_first_name, user_last_name, user_username, user_avatar_path
+            FROM users
+            WHERE user_first_name LIKE %s
+               OR user_last_name LIKE %s
+               OR user_username LIKE %s
+            LIMIT 10
+        """, (f"%{search_for}%", f"%{search_for}%", f"%{search_for}%"))
+        users = cursor.fetchall()
 
-        # 1️⃣ Users
-        q_users = """
-        SELECT user_pk, user_username, user_first_name, user_last_name, user_avatar_path
-        FROM users
-        WHERE user_username LIKE %s OR user_first_name LIKE %s OR user_last_name LIKE %s
-        """
-        cursor.execute(q_users, (part_of_query, part_of_query, part_of_query))
-        users = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+        # ---------------- POSTS ----------------
+        cursor.execute("""
+            SELECT post_pk, post_message
+            FROM posts
+            WHERE post_message LIKE %s
+            LIMIT 10
+        """, (f"%{search_for}%", ))
+        posts = cursor.fetchall()
 
-        # 2️⃣ Posts
-        q_posts = """
-        SELECT post_pk, post_message, user_fk
-        FROM posts
-        WHERE post_message LIKE %s
-        """
-        cursor.execute(q_posts, (part_of_query,))
-        posts = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
-
-        # 3️⃣ Trends (optional)
-        q_trends = """
-        SELECT trend_name
-        FROM trends
-        WHERE trend_name LIKE %s
-        """
-        cursor.execute(q_trends, (part_of_query,))
-        trends = [row[0] for row in cursor.fetchall()]
-
-        cursor.close()
-        db.close()
+        # ---------------- TRENDS ----------------
+        cursor.execute("""
+            SELECT trend_pk, trend_title, trend_message
+            FROM trends
+            WHERE trend_title LIKE %s
+               OR trend_message LIKE %s
+            LIMIT 5
+        """, (f"%{search_for}%", f"%{search_for}%"))
+        trends = cursor.fetchall()
 
         return jsonify({
             "users": users,
@@ -1014,6 +1008,7 @@ def api_search_json():
         })
 
     except Exception as ex:
+        print("SEARCH ERROR:", ex)
         return jsonify({"error": str(ex)}), 500
 
 
