@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 01. 12 2025 kl. 11:58:03
+-- Genereringstid: 04. 12 2025 kl. 20:41:05
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -91,6 +91,8 @@ CREATE TABLE `comments` (
 --
 
 INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `comment_message`, `created_at`) VALUES
+('1ad9fe5649bc4c97b91aacc3217bf570', '4e0180d683f64f34a3acab709854e3b4', 'u008', 'this is one more', '2025-12-04 11:25:04'),
+('1c1c316d427546979e69b34607c7dc06', 'ff81e236f1974a5a9364efbf2b896677', 'u008', 'Oh that\'s nice', '2025-12-04 13:05:25'),
 ('c001', 'p001', 'u002', 'Nice post!', '2025-11-27 13:01:44'),
 ('c002', 'p001', 'u003', 'I agree!', '2025-11-27 13:01:44'),
 ('c004', 'p004', 'u004', 'Cool update!', '2025-11-27 13:01:44'),
@@ -100,7 +102,9 @@ INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `com
 ('c009', 'p006', 'u001', 'Hope everyone has a great day!', '2025-11-27 08:30:12'),
 ('c010', 'p007', 'u008', 'Loving this platform too!', '2025-11-27 11:45:50'),
 ('c011', 'p004', 'u002', 'Thanks for sharing!', '2025-11-27 13:10:20'),
-('c012', 'p005', 'u003', 'Very helpful post.', '2025-11-27 13:12:33');
+('c012', 'p005', 'u003', 'Very helpful post.', '2025-11-27 13:12:33'),
+('eac6babb3f4c45fea310839cbc4e1f6b', '7a74bb4cd669417785747d099d022cae', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'iucsvdvvbuvdubnsnsi', '2025-12-04 12:47:51'),
+('f60900f43e67435c808bd4fd4f2ab427', '4e0180d683f64f34a3acab709854e3b4', 'u008', 'this is a comment', '2025-12-04 11:24:58');
 
 --
 -- Triggers/udløsere `comments`
@@ -249,27 +253,39 @@ CREATE TABLE `posts` (
   `post_message` varchar(280) NOT NULL,
   `post_total_likes` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
   `post_image_path` varchar(255) DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `post_total_comments` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Data dump for tabellen `posts`
 --
 
-INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`) VALUES
-('24cc5dc562484798b66128cf6962961f', 'u008', 'kgfds', 0, '', '2025-12-01 10:23:20'),
-('71e5d597687e4aebb697b5bd156d9f02', 'u008', '', 0, 'uploads/avatar.jpg', '2025-12-01 09:10:28'),
-('cbefa37d03bd4ef5b6c085cf008a6f1b', 'u008', '', 0, 'c8956902b28649308dc1242b393e9b54_avatar.jpg', '2025-12-01 09:46:01'),
-('d87ba4c4d4f64782870a043b4127b7de', 'u008', 'loiyf', 0, '', '2025-12-01 10:08:11'),
-('p001', 'u002', 'Hello world!', 0, 'post_1.jpg', '2025-11-27 13:01:44'),
-('p002', 'u002', 'My first post', 0, 'cake.webp', '2025-11-27 13:01:44'),
-('p003', 'u003', 'Testing posts', 0, 'post_2.jpg', '2025-11-27 13:01:44'),
-('p004', 'u002', 'Another day, another post', 2, 'autumn.png', '2025-11-27 13:01:44'),
-('p005', 'u004', 'Excited to join!', 0, 'post_3.jpg', '2025-11-27 13:01:44'),
-('p006', 'u005', 'Good morning everyone', 0, 'post_5.jpg', '2025-11-27 13:01:44'),
-('p007', 'u006', 'Loving this platform', 6, 'post_4.jpg', '2025-11-27 13:01:44'),
-('p009', 'u008', 'I have used ChatGPT for this image', 0, 'study.png', '2025-11-28 13:20:25'),
-('p011', 'admin001', 'Welcome!!', 0, 'coffeee.png', '2025-11-29 13:09:40');
+INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`, `post_total_comments`) VALUES
+('4e0180d683f64f34a3acab709854e3b4', 'u008', 'yolo', 0, '', '2025-12-04 09:12:45', 2),
+('7a74bb4cd669417785747d099d022cae', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'gheoiofjv', 0, '', '2025-12-04 10:37:21', 1),
+('ff81e236f1974a5a9364efbf2b896677', 'u008', 'A poster', 0, '343839ff7c2e4b79a3159ea56c194642_SoMe_salling_brnecirkel_-_bliv_medlem.png', '2025-12-01 13:22:58', 1),
+('p001', 'u008', 'Hello world! I\'m such an oooold lady', 0, 'post_1.jpg', '2025-11-27 13:01:44', 0),
+('p002', 'u002', 'My first post', 0, 'cake.webp', '2025-11-21 13:01:44', 0),
+('p003', 'u003', 'Testing posts', 0, 'post_2.jpg', '2025-11-27 13:01:44', 0),
+('p004', 'u002', 'Another day, another post', 2, 'autumn.png', '2025-11-27 13:01:44', 0),
+('p005', 'u004', 'Excited to join!', 0, 'post_3.jpg', '2025-11-29 18:30:40', 0),
+('p006', 'u005', 'Good morning everyone', 0, 'post_5.jpg', '2025-11-28 14:01:44', 0),
+('p007', 'u006', 'Loving this platform', 6, 'post_4.jpg', '2025-11-27 13:01:44', 0),
+('p008', 'u009', 'Just joined this platform!', 0, NULL, '2025-12-04 14:00:00', 0),
+('p009', 'u010', 'Loving the new features here!', 2, NULL, '2025-12-02 14:05:00', 1),
+('p010', 'u011', 'Anyone wants to collaborate on a project?', 0, NULL, '2025-12-04 15:07:49', 0),
+('p011', 'admin001', 'Welcome!!', 0, 'coffeee.png', '2025-11-29 13:09:40', 0),
+('p012', 'u003', 'Coffee is life ☕️', 3, 'coffeee.png', '2025-12-04 11:04:00', 1),
+('p013', 'u004', 'Just finished my final exam!! 🎉', 5, NULL, '2025-11-01 12:14:20', 2),
+('p014', 'u011', 'Looking for collaboration partners 👀', 1, NULL, '2025-11-03 13:50:11', 0),
+('p015', 'u010', 'New coding setup installed today 🔥', 4, 'setup.jpg', '2025-12-04 14:26:41', 3),
+('p016', 'u009', 'Snow is finally here ❄️', 2, 'snow.jpg', '2025-12-04 15:01:55', 0),
+('p017', 'u008', 'Making dinner… wish me luck 😂', 0, NULL, '2025-11-04 15:18:38', 0),
+('p018', 'u002', 'This platform is growing fast!', 7, NULL, '2025-12-02 15:25:10', 1),
+('p019', 'u006', 'Running 10km today, let’s go 💪', 6, 'run.jpg', '2025-12-04 15:30:22', 2),
+('p020', 'u005', 'Throwback to last summer ☀️', 3, 'summer.jpg', '2025-12-04 15:33:41', 0),
+('p021', 'admin001', 'Remember to be kind online ❤️', 0, 'kindness.jpg', '2025-12-04 15:37:52', 0);
 
 -- --------------------------------------------------------
 
@@ -292,10 +308,21 @@ CREATE TABLE `trends` (
 --
 
 INSERT INTO `trends` (`trend_pk`, `trend_title`, `trend_message`, `trend_user_fk`, `trend_image`, `is_active`, `created_at`) VALUES
-('t001', 'New Launch', 'A new rocket has been sent to the moon', 'u001', 'rocket.png', 1, '2025-11-29 12:14:26'),
-('t002', 'Politics are Rotten', 'Everyone talks, few act', 'u002', 'politics.png', 1, '2025-11-29 12:14:26'),
-('t003', 'Tech Update', 'New AI model released', 'u003', 'ai.png', 1, '2025-11-29 12:14:26'),
-('t004', 'Sports', 'Big game tonight', 'u001', 'sports.png', 1, '2025-11-29 12:14:26');
+('t001', 'New Launch', 'A new rocket has been sent to the moon', 'u001', 'rocket.png', 1, '2025-11-29 22:14:26'),
+('t002', 'Politics are Rotten', 'Everyone talks, few act', 'u002', 'politics.png', 1, '2025-11-29 09:14:34'),
+('t003', 'Tech Update', 'New AI model released', 'u003', 'ai.png', 1, '2025-11-29 12:50:26'),
+('t004', 'Sports', 'Big game tonight', 'u001', 'sports.png', 1, '2025-11-29 12:14:00'),
+('t005', 'Music Vibes', 'Check out the latest rap album drops!', 'u008', 'music.png', 1, '2025-12-04 09:12:45'),
+('t006', 'Coding Marathon', 'Join the weekend hackathon!', 'u010', 'coding.png', 1, '2025-12-04 10:37:21'),
+('t007', 'Healthy Living', '5 tips to stay fit this winter', 'u009', 'fitness.png', 1, '2025-12-04 11:05:12'),
+('t008', 'Travel Diaries', 'Top 10 places to visit in 2026', 'u011', 'travel.png', 1, '2025-12-04 13:48:59'),
+('t009', 'Movie Buzz', 'New sci-fi movie trailers released', 'u002', 'movies.png', 1, '2025-12-04 14:22:33'),
+('t010', 'Food Craze', 'Viral pasta recipe takes over the internet', 'u003', 'pasta.png', 1, '2025-12-04 15:12:33'),
+('t011', 'Winter Fashion', 'New coat trends dominating 2025', 'u004', 'fashion.png', 1, '2025-12-04 15:14:21'),
+('t012', 'Gaming Hype', 'Massive update released in CyberQuest X', 'u006', 'gaming.png', 1, '2025-12-04 15:18:00'),
+('t013', 'Pet Lovers', '10 cutest dog photos trending right now', 'u009', 'dogs.png', 1, '2025-12-04 15:20:42'),
+('t014', 'Student Life', 'How to survive exams with less stress', 'u011', 'student.png', 1, '2025-12-04 15:33:19'),
+('t015', 'Eco News', 'New climate agreement signed globally', 'u002', 'climate.png', 1, '2025-12-04 15:36:20');
 
 -- --------------------------------------------------------
 
@@ -311,26 +338,34 @@ CREATE TABLE `users` (
   `user_first_name` varchar(20) NOT NULL,
   `user_last_name` varchar(20) NOT NULL DEFAULT '',
   `user_avatar_path` varchar(50) NOT NULL,
+  `reset_token` varchar(255) DEFAULT NULL,
+  `reset_expiry` datetime DEFAULT NULL,
   `user_verification_key` char(32) DEFAULT NULL,
   `user_verified_at` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
   `user_role` enum('user','admin') NOT NULL DEFAULT 'user',
-  `user_language_fk` char(32) DEFAULT NULL
+  `user_language_fk` char(32) DEFAULT NULL,
+  `is_deleted` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Data dump for tabellen `users`
 --
 
-INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `user_verification_key`, `user_verified_at`, `user_role`, `user_language_fk`) VALUES
-('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.jpg', '\'\'', 1764421513, 'admin', NULL),
-('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Amin', 'Jensen', 'avatar_7.jpg', '\'\'', 0, 'user', NULL),
-('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', 'Gertsen', 'avatar_2.jpg', '1234567890abcdef1234567890abcdef', 0, 'user', NULL),
-('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', 'Sørensen', 'avatar_3.jpg', 'key456', 0, 'user', NULL),
-('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', '\'\'', 1700001000, 'user', NULL),
-('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', 'Eriksen', 'avatar_5.jpg', '\'\'', 1700002000, 'user', NULL),
-('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', 'Hansen', 'avatar_6.jpg', 'key789', 0, 'user', NULL),
-('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar.jpg', '\'\'', 1764249116, 'user', NULL),
-('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$yVTjgdfffRT32az3$702fae15648ac053be5d381bb2d55f877ce1ad7e51c3d4af7c1fdbd97d8c0ba0f8bfee9e523241a284c70dd69ddb056845b1e17d17b2089e10bc1718cacf162d', 'sophie', 'Sophie', 'Teinvig Kjer', 'avatar.jpg', '', 1764421513, 'user', NULL);
+INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `reset_token`, `reset_expiry`, `user_verification_key`, `user_verified_at`, `user_role`, `user_language_fk`, `is_deleted`) VALUES
+('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.jpg', NULL, NULL, '\'\'', 1764421513, 'admin', NULL, 0),
+('f32f0425e18b4f8dbc33f0eb51331fbf', 'soph1155@stud.ek.dk', 'scrypt:32768:8:1$AS75Y7b9DW3wNUo1$d19735a9cdfcfc7a2ad9c47377e646f3d7eaf70aca31437d2481b3008255adff64ca665a5ec4bc214095ee1f139042460cadbb0040ae1a88246db63ffe4640e4', 'Tester', 'Sopheren', 'Testing', 'uploads/f32f0425e18b4f8dbc33f0eb51331fbf_hands.png', NULL, NULL, '', 1764707764, 'user', NULL, 0),
+('t999', 't999@example.com', 'dummyhash', 'testuser999', 'Test', 'User', 'images/avatar_2.jpg', NULL, NULL, NULL, 0, 'user', NULL, 0),
+('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Amin', 'Jensen', 'avatar_7.jpg', NULL, NULL, '\'\'', 0, 'user', NULL, 0),
+('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', 'Gertsen', 'avatar_2.jpg', NULL, NULL, '1234567890abcdef1234567890abcdef', 0, 'user', NULL, 0),
+('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', 'Sørensen', 'avatar_3.jpg', NULL, NULL, 'key456', 0, 'user', NULL, 0),
+('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', NULL, NULL, '\'\'', 1700001000, 'user', NULL, 0),
+('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', 'Eriksen', 'avatar_5.jpg', NULL, NULL, '\'\'', 1700002000, 'user', NULL, 0),
+('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', 'Hansen', 'avatar_6.jpg', NULL, NULL, 'key789', 0, 'user', NULL, 0),
+('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar.jpg', NULL, NULL, '\'\'', 1764249116, 'user', NULL, 1),
+('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$E6C1XsNIuJRQr6p9$a3bc4f2e87c15f2f9889505012b5f07dcdbc9dbb4a3c11ff6e3c03a5c87463c7539ecd1678fc3473a55f60e0023322f17a7e52dfb96947d0841c8aab421a81b4', 'teinvig', 'Sophie', 'Teinvig Kjer', 'uploads/u008_leaves.png', NULL, NULL, '', 1764708165, 'user', NULL, 0),
+('u009', 'lina@example.com', 'scrypt:hash7', 'lina', 'Lina', 'Nielsen', 'avatar_9.jpg', NULL, NULL, '', 0, 'user', NULL, 0),
+('u010', 'jonas@example.com', 'scrypt:hash8', 'jonas', 'Jonas', 'Hansen', 'avatar_10.jpg', NULL, NULL, '', 0, 'user', NULL, 0),
+('u011', 'emil@example.com', 'scrypt:hash9', 'emil', 'Emil', 'Olsen', 'avatar_11.jpg', NULL, NULL, '', 0, 'user', NULL, 0);
 
 -- --------------------------------------------------------
 
