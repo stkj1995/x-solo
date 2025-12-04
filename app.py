@@ -80,8 +80,6 @@ def allowed_file(filename):
 # Make sure the folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-
-
 ##############################
 ##############################
 ##############################
@@ -523,30 +521,6 @@ def verify_account():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-# HOME #############################
-@app.route("/home")
-def home():
-    user = session.get("user")  # logged-in user
-    try:
-        db, cursor = x.db()
-        cursor.execute("""
-            SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path, p.post_total_likes, p.created_at,
-                   u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
-            FROM posts p
-            JOIN users u ON p.post_user_fk = u.user_pk
-            ORDER BY p.created_at DESC
-        """)
-        tweets = cursor.fetchall()
-
-        # Make sure each tweet is a dict (Jinja likes dicts)
-        tweets = [dict(tweet) for tweet in tweets]
-
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
-
-    return render_template("home.html", tweets=tweets, user=user)
-
 ##############################
 @app.get("/logout")
 def logout():
@@ -559,48 +533,59 @@ def logout():
     finally:
         pass
 
-# HOME COMP #############################
-# @app.get("/home-comp")
-# def home_comp():
-#     try:
+# HOME PAGE
+@app.route("/home")
+def home():
+    user = session.get("user")  # logged-in user
+    db, cursor = x.db()
+    try:
+        # Fetch posts + user info
+        cursor.execute("""
+            SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path, 
+                   p.post_total_likes, p.created_at,
+                   u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
+            FROM posts p
+            JOIN users u ON p.post_user_fk = u.user_pk
+            ORDER BY p.created_at DESC
+        """)
+        tweets = cursor.fetchall()
 
-#         user = session.get("user", "")
-#         if not user: return "error"
-#         db, cursor = x.db()
-#         q = "SELECT * FROM users JOIN posts ON user_pk = post_user_fk ORDER BY RAND() LIMIT 5"
-#         cursor.execute(q)
-#         tweets = cursor.fetchall()
-#         ic(tweets)
+        # Fetch comments for each tweet
+        for t in tweets:
+            cursor.execute("""
+                SELECT c.comment_pk, c.comment_post_fk, c.comment_user_fk,
+                       c.comment_message, c.created_at,
+                       u.user_first_name, u.user_last_name
+                FROM comments c
+                JOIN users u ON u.user_pk = c.comment_user_fk
+                WHERE c.comment_post_fk = %s
+                ORDER BY c.created_at ASC
+            """, (t["post_pk"],))
+            t["comments"] = cursor.fetchall() or []
+            t["comment_count"] = len(t["comments"])
+            t["liked_by_user"] = False  # Needed for _tweet.html
 
-#         html = render_template("_home_comp.html", tweets=tweets)
-#         return f"""<mixhtml mix-update="main">{ html }</mixhtml>"""
-#     except Exception as ex:
-#         ic(ex)
-#         return "error"
-#     finally:
-#         pass
-# HOME COMP #############################
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+    return render_template("home.html", tweets=tweets, user=user)
+
+
+# COMPONENT FOR AJAX UPDATES
 @app.get("/home-comp")
 def home_comp():
+    user = session.get("user")
+    if not user:
+        return "error"
+
+    db, cursor = x.db()
     try:
-        user = session.get("user", "")
-        if not user:
-            return "error"
-
-        db, cursor = x.db()
-
-        # 1) Hent posts + user info
+        # Fetch latest posts
         cursor.execute("""
-            SELECT 
-                p.post_pk,
-                p.post_user_fk,
-                p.post_message,
-                p.post_image_path,
-                p.created_at AS post_created_at,
-                u.user_first_name,
-                u.user_last_name,
-                u.user_username,
-                u.user_avatar_path
+            SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path,
+                   p.created_at AS post_created_at,
+                   u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
             FROM posts p
             JOIN users u ON u.user_pk = p.post_user_fk
             ORDER BY p.created_at DESC
@@ -608,41 +593,28 @@ def home_comp():
         """)
         tweets = cursor.fetchall()
 
-        # 2) For hvert post → hent comments + count
+        # Fetch comments + count
         for t in tweets:
             cursor.execute("""
-                SELECT 
-                    c.comment_pk,
-                    c.comment_post_fk,
-                    c.comment_user_fk,
-                    c.comment_message,
-                    c.created_at,
-                    u.user_first_name,
-                    u.user_last_name
+                SELECT c.comment_pk, c.comment_post_fk, c.comment_user_fk,
+                       c.comment_message, c.created_at,
+                       u.user_first_name, u.user_last_name
                 FROM comments c
                 JOIN users u ON u.user_pk = c.comment_user_fk
                 WHERE c.comment_post_fk = %s
                 ORDER BY c.created_at ASC
             """, (t["post_pk"],))
             t["comments"] = cursor.fetchall() or []
-
-            cursor.execute("SELECT COUNT(*) AS cnt FROM comments WHERE comment_post_fk = %s", (t["post_pk"],))
-            row = cursor.fetchone()
-            t["comment_count"] = row["cnt"]
-
-            # Needed so _tweet.html doesn’t crash
-            t["liked_by_user"] = False  
+            t["comment_count"] = len(t["comments"])
+            t["liked_by_user"] = False
 
         html = render_template("_home_comp.html", tweets=tweets, user=user)
         return f"""<mixhtml mix-update="main">{html}</mixhtml>"""
 
-    except Exception as ex:
-        print("Error in home_comp:", ex)
-        return "error"
-
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
 
 # PROFILE #############################
 @app.get("/profile")
@@ -799,6 +771,44 @@ def toggle_like_tweet():
     except Exception as e:
         print("LIKE ERROR:", e)
         return f"<mixhtml><mix-message>{e}</mix-message></mixhtml>", 500
+
+    finally:
+        cursor.close()
+        db.close()
+
+#######################
+@app.route("/posts")
+def get_posts():
+    """Fetch all posts with their comments"""
+    db, cursor = x.db()
+
+    try:
+        # Fetch posts with user info
+        cursor.execute("""
+            SELECT p.post_pk, p.post_message, p.post_image_path, p.post_user_fk,
+                   p.post_total_likes, p.created_at,
+                   u.username
+            FROM posts p
+            JOIN users u ON u.user_pk = p.post_user_fk
+            ORDER BY p.created_at DESC
+        """)
+        posts = cursor.fetchall()
+
+        # Fetch comments for each post
+        for post in posts:
+            cursor.execute("""
+                SELECT c.comment_pk, c.comment_message, c.comment_user_fk, u.username, c.created_at
+                FROM comments c
+                JOIN users u ON u.user_pk = c.comment_user_fk
+                WHERE c.comment_post_fk = %s
+                ORDER BY c.created_at ASC
+            """, (post["post_pk"],))
+            post["comments"] = cursor.fetchall()
+
+        return render_template("posts.html", posts=posts, session_user=session.get("user"))
+
+    except Exception as ex:
+        return f"Error fetching posts: {ex}", 500
 
     finally:
         cursor.close()
@@ -1104,43 +1114,48 @@ def api_unfollow():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-# DELETE USER
+# DELETE USER (soft delete)
 @app.post("/delete-user")
 def delete_user():
     user_pk = request.form.get("user_pk")
-
-    # Validate user ID
-    if not user_pk or not user_pk.isdigit():
+    if not user_pk:
         return "Invalid user ID", 400
 
     db, cursor = x.db()
-
     try:
-        # Fetch avatar path
+        # Soft delete
+        cursor.execute("UPDATE users SET is_deleted = 1 WHERE user_pk = %s", (user_pk,))
+        db.commit()
+        # Log out
+        session.pop("user", None)
+        return redirect(url_for("home"))
+    finally:
+        cursor.close()
+        db.close()
+
+##################################
+# RESTORE USER (soft delete rollback)
+@app.post("/restore-user")
+def restore_user():
+    user_pk = request.form.get("user_pk")
+
+    if not user_pk:
+        return "Invalid user ID", 400
+
+    db, cursor = x.db()
+    try:
         cursor.execute(
-            "SELECT user_avatar_path FROM users WHERE user_pk = %s",
+            "UPDATE users SET is_deleted = 0 WHERE user_pk = %s",
             (user_pk,)
         )
-        row = cursor.fetchone()
-
-        # Delete user avatar file if it exists
-        if row:
-            avatar_path = row.get("user_avatar_path")
-            if avatar_path:
-                full_path = os.path.join("static", avatar_path)
-                if os.path.isfile(full_path):
-                    os.remove(full_path)
-
-        # Delete user from DB
-        cursor.execute("DELETE FROM users WHERE user_pk = %s", (user_pk,))
         db.commit()
 
-        return redirect(url_for("home"))
+        return redirect(url_for("profile"))  # or wherever you want to go
 
     except Exception as ex:
         db.rollback()
-        print("Error deleting user:", ex)
-        return "An error occurred while deleting the user", 500
+        print("Error restoring user:", ex)
+        return "An error occurred while restoring the user", 500
 
     finally:
         cursor.close()
@@ -1305,7 +1320,6 @@ def api_edit_comment():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 # Delete comment
 @app.route("/api-delete-comment", methods=["POST"])

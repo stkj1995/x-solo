@@ -6,9 +6,15 @@
   <!-- Show current avatar -->
   <div class="current_avatar">
     {% set avatar_path = user.user_avatar_path %}
-    <img class="avatar_preview"
-         src="{% if avatar_path.startswith('uploads/') %}{{ url_for('static', filename=avatar_path) }}{% elif avatar_path %}{{ url_for('static', filename='images/' + avatar_path) }}{% else %}{{ url_for('static', filename='images/avatar_2.jpg') }}{% endif %}"
-         alt="Current profile picture" />
+    <img class="avatar_preview" src="{% if avatar_path.startswith('uploads/') %}
+         {{ url_for('static', filename=avatar_path) }}
+       {% elif avatar_path.startswith('http') %}
+         {{ avatar_path }}
+       {% elif avatar_path %}
+         {{ url_for('static', filename='images/' + avatar_path) }}
+       {% else %}
+         {{ url_for('static', filename='images/avatar_2.jpg') }}
+       {% endif %}" alt="Current profile picture" />
   </div>
 
   <!-- Upload new image -->
@@ -21,31 +27,62 @@
   <div>
     <label for="user_email"><span>Email</span></label>
     <input name="user_email" id="user_email" type="text" mix-check="{{ x.REGEX_EMAIL }}"
-           value="{{ user.user_email }}" />
+      value="{{ user.user_email }}" />
   </div>
 
   <!-- Username -->
   <div>
-    <label for="user_username"><span>Username</span> - {{ x.USER_USERNAME_MIN }} to {{ x.USER_USERNAME_MAX }} characters</label>
+    <label for="user_username"><span>Username</span> - {{ x.USER_USERNAME_MIN }} to {{ x.USER_USERNAME_MAX }}
+      characters</label>
     <input name="user_username" id="user_username" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
-           value="{{ user.user_username }}" />
+      value="{{ user.user_username }}" />
   </div>
 
   <!-- First name -->
   <div>
-    <label for="user_first_name"><span>First name</span> - {{ x.USER_FIRST_NAME_MIN }} to {{ x.USER_FIRST_NAME_MAX }} characters</label>
+    <label for="user_first_name"><span>First name</span> - {{ x.USER_FIRST_NAME_MIN }} to {{ x.USER_FIRST_NAME_MAX }}
+      characters</label>
     <input name="user_first_name" id="user_first_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
-           value="{{ user.user_first_name }}" />
+      value="{{ user.user_first_name }}" />
   </div>
 
   <!-- Last name -->
   <div>
-    <label for="user_last_name"><span>Last name</span> - {{ x.USER_LAST_NAME_MIN }} to {{ x.USER_LAST_NAME_MAX }} characters</label>
+    <label for="user_last_name"><span>Last name</span> - {{ x.USER_LAST_NAME_MIN }} to {{ x.USER_LAST_NAME_MAX }}
+      characters</label>
     <input name="user_last_name" id="user_last_name" type="text" mix-check="{{ x.REGEX_USER_USERNAME }}"
-           value="{{ user.user_last_name }}" />
+      value="{{ user.user_last_name }}" />
   </div>
 
   <button type="submit" class="x-dialog__btn" mix-default="Update profile" mix-await="Updating profile ...">
     Update profile
   </button>
+
+  <!-- Delete Account Button -->
+  <button type="button" id="deleteBtn" class="x-dialog__btn x-dialog__btn--danger mt-4">
+    Delete Account
+  </button>
+
+  <!-- Restore User Button (for testing only) -->
+  <form action="{{ url_for('restore_user') }}" method="POST" class="mt-4">
+    <input type="hidden" name="user_pk" value="{{ user.user_pk }}">
+    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">
+      Restore User
+    </button>
+  </form>
 </form>
+
+<!-- Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded shadow-lg w-96 text-center relative">
+    <h2 class="text-xl font-semibold mb-4">Confirm Deletion</h2>
+    <p class="mb-4">Are you sure you want to delete your account? This action cannot be undone.</p>
+
+    <form action="{{ url_for('delete_user') }}" method="POST">
+      <input type="hidden" name="user_pk" value="{{ user.user_pk }}">
+      <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded mr-2">Yes, Delete</button>
+    </form>
+
+    <button type="button" id="cancelDelete" class="bg-gray-200 px-4 py-2 rounded mt-2">No, Cancel</button>
+  </div>
+</div>
