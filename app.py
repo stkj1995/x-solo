@@ -954,43 +954,62 @@ def api_delete_post(post_pk):
         if "db" in locals(): db.close()
 
 # API SEARCH #############################
-@app.post("/api-search")
-def api_search():
+# API SEARCH #############################
+@app.post("/api-search-json")
+def api_search_json():
+    from flask import request, jsonify
+
     try:
-        search_for = request.form.get("search_for", "")
-        if not search_for: 
-            return "empty search field", 400
+        data = request.get_json() or {}
+        search_for = data.get("search_for", "").strip()
+
+        # Validate input
+        if not search_for or len(search_for) > 100:
+            return jsonify({"users": [], "posts": [], "trends": []})
 
         part_of_query = f"%{search_for}%"
-        ic(search_for)
 
-        db, cursor = x.db()
+        db, cursor = x.db()  # your DB connection
 
-        # Search users by username or first name
+        # 1️⃣ Users
         q_users = """
-        SELECT * FROM users 
-        WHERE user_username LIKE %s OR user_first_name LIKE %s
+        SELECT user_pk, user_username, user_first_name, user_last_name, user_avatar_path
+        FROM users
+        WHERE user_username LIKE %s OR user_first_name LIKE %s OR user_last_name LIKE %s
         """
-        cursor.execute(q_users, (part_of_query, part_of_query))
-        users = cursor.fetchall()
+        cursor.execute(q_users, (part_of_query, part_of_query, part_of_query))
+        users = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
 
-        # Search posts
-        q_posts = "SELECT * FROM posts WHERE post_message LIKE %s"
+        # 2️⃣ Posts
+        q_posts = """
+        SELECT post_pk, post_message, user_fk
+        FROM posts
+        WHERE post_message LIKE %s
+        """
         cursor.execute(q_posts, (part_of_query,))
-        posts = cursor.fetchall()
+        posts = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+
+        # 3️⃣ Trends (optional)
+        q_trends = """
+        SELECT trend_name
+        FROM trends
+        WHERE trend_name LIKE %s
+        """
+        cursor.execute(q_trends, (part_of_query,))
+        trends = [row[0] for row in cursor.fetchall()]
+
+        cursor.close()
+        db.close()
 
         return jsonify({
             "users": users,
-            "posts": posts
+            "posts": posts,
+            "trends": trends
         })
 
     except Exception as ex:
-        ic(ex)
-        return str(ex)
-    
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+        return jsonify({"error": str(ex)}), 500
+
 
 ##############################
 @app.get("/get-data-from-sheet")

@@ -1,0 +1,20 @@
+{% if users or posts %}
+{% for user in users %}
+<div class="d-flex a-items-center mb-2">
+    <img src="{{ url_for('static', filename='images/' ~ (user.user_avatar_path if user.user_avatar_path else 'unknown.jpg')) }}"
+        class="w-8 h-8 rounded-full" alt="Profile Picture">
+    <div class="w-full ml-2">
+        <p>{{ user.user_first_name }} {{ user.user_last_name }}
+            <span class="text-c-gray:+20 text-70">@{{ user.user_username }}</span>
+        </p>
+    </div>
+    <button class="px-4 py-1 text-c-white bg-c-black rounded-lg">Follow</button>
+</div>
+{% endfor %}
+
+{% for post in posts %}
+<div class="border-t border-c-gray:+20 mt-2 pt-2">{{ post.post_message }}</div>
+{% endfor %}
+{% else %}
+<p class="text-c-gray:+50">No results found</p>
+{% endif %}

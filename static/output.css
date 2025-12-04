@@ -701,6 +701,10 @@ video {
   height: 2rem;
 }
 
+.max-h-64 {
+  max-height: 16rem;
+}
+
 .w-5 {
   width: 1.25rem;
 }
@@ -789,6 +793,10 @@ video {
 
 .self-end {
   align-self: flex-end;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
 }
 
 .rounded {

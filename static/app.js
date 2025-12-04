@@ -162,16 +162,78 @@ async function server(url, method, data_source_selector, function_after_fetch) {
 }
 
 // ##############################
-function get_search_results(url, method, data_source_selector, function_after_fetch) {
-    const txt_search_for = document.querySelector("#txt_search_for");
-    if (txt_search_for.value === "") {
-        console.log("empty search");
-        document.querySelector("#search_results").innerHTML = "";
-        document.querySelector("#search_results").classList.add("d-none");
-        return false;
+function doSearch() {
+    const input = document.querySelector("#txt_search_for");
+    const query = input.value.trim();
+    const results = document.querySelector("#search_results");
+
+    if (!query) {
+        results.innerHTML = "";
+        results.classList.add("d-none");
+        return;
     }
-    server(url, method, data_source_selector, function_after_fetch);
+
+    fetch("/api-search-json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ search_for: query })
+    })
+    .then(res => res.json())
+    .then(data => displayResults(data))
+    .catch(err => console.error(err));
 }
+
+function displayResults(data) {
+    const container = document.querySelector("#search_results");
+    container.innerHTML = "";
+
+    if ((!data.users || data.users.length === 0) &&
+        (!data.posts || data.posts.length === 0) &&
+        (!data.trends || data.trends.length === 0)) {
+        container.innerHTML = "<p class='text-c-gray:+50'>No results found</p>";
+        container.classList.remove("d-none");
+        return;
+    }
+
+    // Users
+    if (data.users) {
+        data.users.forEach(user => {
+            const div = document.createElement("div");
+            div.className = "d-flex a-items-center mb-2";
+            div.innerHTML = `
+                <img src="/static/images/${user.user_avatar_path || 'unknown.jpg'}" class="w-8 h-8 rounded-full" alt="Profile">
+                <div class="w-full ml-2">
+                    <p>${user.user_first_name} ${user.user_last_name} 
+                        <span class="text-c-gray:+20 text-70">@${user.user_username}</span>
+                    </p>
+                </div>
+                <button class="px-4 py-1 text-c-white bg-c-black rounded-lg">Follow</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // Posts
+    if (data.posts) {
+        data.posts.forEach(post => {
+            const div = document.createElement("div");
+            div.className = "border-t border-c-gray:+20 mt-2 pt-2";
+            div.textContent = post.post_message;
+            container.appendChild(div);
+        });
+    }
+
+    // Trends
+    if (data.trends) {
+        const trendDiv = document.createElement("div");
+        trendDiv.className = "mt-2";
+        trendDiv.innerHTML = "<strong>Trends:</strong> " + data.trends.join(", ");
+        container.appendChild(trendDiv);
+    }
+
+    container.classList.remove("d-none");
+}
+
 
 // #############################
  document.addEventListener("DOMContentLoaded", () => {
