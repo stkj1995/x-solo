@@ -509,51 +509,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ############################
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("🔥 app.js loaded");
+  const modal = document.getElementById("deleteModal");
+  const openBtn = document.getElementById("deleteBtn");
+  const cancelBtn = document.getElementById("cancelDeleteModal");
 
-    document.addEventListener("click", async function (event) {
-        const btn = event.target.closest(".follow-btn");
-        if (!btn) return;
+  // Open modal
+  openBtn.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+  });
 
-        const userPk = btn.dataset.user;
-        const action = btn.dataset.action;
+  // Close modal
+  cancelBtn.addEventListener("click", () => {
+    modal.classList.add("hidden");
+  });
 
-        const endpoint = action === "follow" ? "/api-follow" : "/api-unfollow";
-
-        const formData = new FormData();
-        formData.append("following_pk", userPk);
-
-        try {
-            const res = await fetch(endpoint, {
-                method: "POST",
-                body: formData
-            });
-
-            const data = await res.json();
-            if (!data.success) {
-                console.error(data.error);
-                return;
-            }
-
-            // Update button UI
-            if (action === "follow") {
-                btn.textContent = "Unfollow";
-                btn.classList.remove("bg-c-black");
-                btn.classList.add("bg-c-gray-500");
-                btn.dataset.action = "unfollow";
-            } else {
-                btn.textContent = "Follow";
-                btn.classList.remove("bg-c-gray-500");
-                btn.classList.add("bg-c-black");
-                btn.dataset.action = "follow";
-            }
-
-        } catch (err) {
-            console.error("Follow error:", err);
-        }
-    });
+  // Close if click outside modal content
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.add("hidden");
+  });
 });
 
+// ##############################
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".follow-btn");
+  if (!btn) return;
 
+  const userPk = btn.dataset.user;
+  const action = btn.dataset.action;
+
+  // Optimistic UI toggle
+  if (action === "follow") {
+    btn.textContent = "Unfollow";
+    btn.classList.remove("bg-c-black");
+    btn.classList.add("bg-c-gray-500");
+    btn.dataset.action = "unfollow";
+  } else {
+    btn.textContent = "Follow";
+    btn.classList.remove("bg-c-gray-500");
+    btn.classList.add("bg-c-black");
+    btn.dataset.action = "follow";
+  }
+
+  try {
+    const res = await fetch(`/api-${action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `following_pk=${encodeURIComponent(userPk)}`
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+  } catch (err) {
+    console.error("Follow API error:", err);
+    // revert UI if API fails
+    if (action === "follow") {
+      btn.textContent = "Follow";
+      btn.classList.remove("bg-c-gray-500");
+      btn.classList.add("bg-c-black");
+      btn.dataset.action = "follow";
+    } else {
+      btn.textContent = "Unfollow";
+      btn.classList.remove("bg-c-black");
+      btn.classList.add("bg-c-gray-500");
+      btn.dataset.action = "unfollow";
+    }
+  }
+});
 
 });

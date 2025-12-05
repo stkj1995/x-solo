@@ -535,7 +535,6 @@ def logout():
         pass
 
 # HOME PAGE
-# HOME PAGE
 @app.route("/home")
 def home():
     user = session.get("user")  # logged-in user
@@ -554,7 +553,6 @@ def home():
             ORDER BY p.created_at DESC
         """)
         tweets = cursor.fetchall()
-        random.shuffle(tweets)
 
         # Fetch comments for each tweet
         for t in tweets:
@@ -572,7 +570,6 @@ def home():
             t["liked_by_user"] = False  # Needed for _tweet.html
 
         # ----------------- Who to follow suggestions -----------------
-        # Get 5 random users excluding the current user
         cursor.execute("""
             SELECT u.user_pk, u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
             FROM users u
@@ -582,13 +579,13 @@ def home():
         """, (user["user_pk"],))
         suggestions = cursor.fetchall()
 
-        # Get list of users the current user already follows
+        # ----------------- Get current user's follows -----------------
         cursor.execute("""
             SELECT follow_target_fk
             FROM follows
             WHERE follow_user_fk = %s
         """, (user["user_pk"],))
-        following_list = [row["follow_target_fk"] for row in cursor.fetchall()]
+        follows = cursor.fetchall()  # list of dicts with 'follow_target_fk'
 
     finally:
         if "cursor" in locals(): cursor.close()
@@ -599,10 +596,11 @@ def home():
         tweets=tweets,
         user=user,
         suggestions=suggestions,
-        following_list=following_list
+        follows=follows
     )
 
 # COMPONENT FOR AJAX UPDATES
+# COMPONENT FOR AJAX UPDATES (feed only)
 @app.get("/home-comp")
 def home_comp():
     user = session.get("user")
@@ -611,7 +609,7 @@ def home_comp():
 
     db, cursor = x.db()
     try:
-        # Fetch latest posts
+        # ----------------- Fetch latest posts -----------------
         cursor.execute("""
             SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path,
                    p.created_at AS post_created_at,
@@ -623,10 +621,7 @@ def home_comp():
         """)
         tweets = cursor.fetchall()
 
-        # Shuffle posts randomly
-        random.shuffle(tweets)
-
-        # Fetch comments + count
+        # Fetch comments for each tweet
         for t in tweets:
             cursor.execute("""
                 SELECT c.comment_pk, c.comment_post_fk, c.comment_user_fk,
@@ -641,12 +636,14 @@ def home_comp():
             t["comment_count"] = len(t["comments"])
             t["liked_by_user"] = False
 
+        # Render only the feed component
         html = render_template("_home_comp.html", tweets=tweets, user=user)
-        return f"""<mixhtml mix-update="main">{html}</mixhtml>"""
+        return f"""<mixhtml mix-update="feed">{html}</mixhtml>"""  # <-- updates only #feed
 
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
 
 # PROFILE #############################
 @app.get("/profile")
@@ -1163,7 +1160,6 @@ def api_unfollow():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
 # SOFT DELETE
 @app.post("/delete-user")
 def delete_user():
@@ -1183,7 +1179,6 @@ def delete_user():
     finally:
         cursor.close()
         db.close()
-
 
 # RESTORE USER
 @app.post("/restore-user")
