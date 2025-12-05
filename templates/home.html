@@ -47,16 +47,13 @@
             <button class="post-btn">Post</button>
 
             <div id="profile_tag">
-                {% set avatar = user.user_avatar_path %}
-                <img src="{% if avatar and avatar.startswith('uploads/') %}
-         {{ url_for('static', filename=avatar) }}
-       {% elif avatar and avatar.startswith('http') %}
-         {{ avatar }}
-       {% elif avatar %}
-         {{ url_for('static', filename='images/' + avatar) }}
+                {% set avatar = user.user_avatar_path or '' %}
+                <img src="{% if avatar %}
+         {{ url_for('static', filename='uploads/' + avatar) }}
        {% else %}
          {{ url_for('static', filename='images/avatar_1.jpg') }}
        {% endif %}" alt="Profile">
+
                 <div>
                     <div class="name">{{ user.user_first_name }}</div>
                     <div class="handle">@{{ user.user_username }}</div>

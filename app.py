@@ -53,7 +53,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from icecream import ic
 ic.configureOutput(prefix=f'----- | ', includeContext=True)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.config["DEBUG"] = True
 app.secret_key = "SECRET_KEY"
 s = URLSafeTimedSerializer(app.secret_key)
