@@ -529,6 +529,77 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// ########################
+document.addEventListener("DOMContentLoaded", () => {
+    const trendsContainer = document.querySelector("#trends-container");
+
+    if (!trendsContainer) return;
+
+    fetch("/api-trends")
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) throw new Error(data.error || "Failed to load trends");
+
+            trendsContainer.innerHTML = "";
+            data.trends.forEach(trend => {
+                const trendHTML = `
+                    <div class="trend-card border-1 border-c-gray:+50 rounded-md pa-2 mb-2 d-flex flex-row items-center justify-between">
+                        <div class="trend-content d-flex flex-row items-start gap-2">
+                            ${trend.trend_image ? `<img src="/static/images/${trend.trend_image}" class="trend-img w-12 h-12 rounded-md object-cover" alt="${trend.trend_title}">` : ""}
+                            <div class="trend-text">
+                                <p class="text-c-gray:+20 text-90">${trend.trend_title}</p>
+                                <p class="text-c-black text-80">${trend.trend_message} <button class="text-c-tealblue text-60">... more</button></p>
+                            </div>
+                        </div>
+                        <span class="option cursor-pointer text-90">⋮</span>
+                    </div>
+                `;
+                trendsContainer.innerHTML += trendHTML;
+            });
+        })
+        .catch(err => console.error("Error loading trends:", err));
+});
+
+// ##############################
+document.addEventListener("DOMContentLoaded", () => {
+    const trends = Array.from(document.querySelectorAll(".trend-item"));
+    const maxVisible = 6; // number of trends to show initially
+
+    if (trends.length > maxVisible) {
+        // Hide all trends beyond maxVisible
+        trends.forEach((trend, i) => {
+            if (i >= maxVisible) trend.classList.add("hidden");
+        });
+
+        // Create the "More news" button
+        const moreBtn = document.createElement("button");
+        moreBtn.textContent = "More news";
+        moreBtn.className = "text-c-tealblue mt-2";
+        trends[trends.length - 1].parentNode.appendChild(moreBtn);
+
+        moreBtn.addEventListener("click", () => {
+            trends.forEach(trend => trend.classList.remove("hidden"));
+            moreBtn.remove(); // remove button after expanding
+        });
+    }
+
+    // Optional: handle "... more" toggle for long messages
+    document.querySelectorAll(".trend-toggle").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const parent = btn.closest("p");
+            const fullText = parent.querySelector(".trend-full");
+            const shortText = parent.querySelector(".trend-short");
+
+            if (fullText && shortText) {
+                fullText.classList.toggle("hidden");
+                shortText.classList.toggle("hidden");
+                btn.textContent = fullText.classList.contains("hidden") ? "... more" : "show less";
+            }
+        });
+    });
+});
+
+
 // ##############################
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".follow-btn");

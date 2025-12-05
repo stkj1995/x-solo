@@ -587,6 +587,16 @@ def home():
         """, (user["user_pk"],))
         follows = cursor.fetchall()  # list of dicts with 'follow_target_fk'
 
+        # ----------------- Fetch active trends -----------------
+        cursor.execute("""
+            SELECT trend_pk, trend_title, trend_message, trend_user_fk, trend_image, created_at
+            FROM trends
+            WHERE is_active = 1
+            ORDER BY created_at DESC
+            LIMIT 4
+        """)
+        trends = cursor.fetchall()
+
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
@@ -596,7 +606,8 @@ def home():
         tweets=tweets,
         user=user,
         suggestions=suggestions,
-        follows=follows
+        follows=follows,
+        trends=trends  # <-- pass trends to template
     )
 
 # COMPONENT FOR AJAX UPDATES (feed only)
@@ -642,7 +653,6 @@ def home_comp():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 # PROFILE #############################
 @app.get("/profile")
@@ -1032,7 +1042,6 @@ def api_search_json():
     except Exception as ex:
         print("SEARCH ERROR:", ex)
         return jsonify({"error": str(ex)}), 500
-
 
 ##############################
 @app.get("/get-data-from-sheet")
