@@ -349,6 +349,16 @@ function displayResults(data) {
     });
   });
 
+          // Trigger search on button click
+        const searchBtn = document.querySelector("#btn_search");
+        if (searchBtn) {
+            searchBtn.addEventListener("click", function(e) {
+                e.preventDefault();  // Prevent form submission if inside a form
+                doSearch();           // Trigger the same search function
+        });
+}
+
+
 });
 
 // ##############################

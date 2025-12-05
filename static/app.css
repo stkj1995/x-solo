@@ -513,10 +513,10 @@ aside {
     width: 220px;
   }
 
-#search_form {
+#txt_search_for {
   position: relative; 
   margin: 0.5rem;
-  background-color: #cee5f5;
+  background-color: #e0e9f0;
 }
 
   .x-landing {
