@@ -1,4 +1,4 @@
-<div class="d-flex a-items-center">
+<div class="d-flex a-items-center mb-2">
     {% set sugg_avatar = suggestion.user_avatar_path or 'avatar_1.jpg' %}
     <img src="{% if sugg_avatar.startswith('http') %}{{ sugg_avatar }}{% else %}{{ url_for('static', filename='images/' + sugg_avatar) }}{% endif %}"
         class="w-8 h-8 rounded-full" alt="Profile Picture">
@@ -10,10 +10,18 @@
         </p>
     </div>
 
-    <button
+    <!-- <button
         class="follow-btn px-4 py-1 text-c-white rounded-lg {% if suggestion.user_pk in following_list %}bg-c-gray-500{% else %}bg-c-black{% endif %}"
         data-user="{{ suggestion.user_pk }}"
         data-action="{% if suggestion.user_pk in following_list %}unfollow{% else %}follow{% endif %}">
         {% if suggestion.user_pk in following_list %}Unfollow{% else %}Follow{% endif %}
+    </button> -->
+    <button class="follow-btn px-4 py-1 text-c-white rounded-lg 
+    {% if suggestion.user_pk in following_list %}bg-c-gray-500{% else %}bg-c-black{% endif %}"
+        data-user="{{ suggestion.user_pk }}"
+        data-action="{% if suggestion.user_pk in following_list %}unfollow{% else %}follow{% endif %}">
+
+        {% if suggestion.user_pk in following_list %}Unfollow{% else %}Follow{% endif %}
     </button>
+
 </div>

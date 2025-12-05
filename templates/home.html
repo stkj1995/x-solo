@@ -103,12 +103,19 @@
         </aside>
 
     </div>
+    <script>
+        console.log("Home JS loaded"); // test
+        document.querySelectorAll(".follow-btn").forEach(b => {
+            b.addEventListener("click", () => alert("Button clicked!"));
+        });
+    </script>
+
 
     <script src="{{ url_for('static', filename='mixhtml.js') }}"></script>
     <script>
         mojo()
     </script>
-    
+
 </body>
 
 </html>

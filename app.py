@@ -535,12 +535,16 @@ def logout():
         pass
 
 # HOME PAGE
+# HOME PAGE
 @app.route("/home")
 def home():
     user = session.get("user")  # logged-in user
+    if not user:
+        return redirect(url_for("login"))
+
     db, cursor = x.db()
     try:
-        # Fetch posts + user info
+        # ----------------- Fetch posts -----------------
         cursor.execute("""
             SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path, 
                    p.post_total_likes, p.created_at,
@@ -550,8 +554,6 @@ def home():
             ORDER BY p.created_at DESC
         """)
         tweets = cursor.fetchall()
-
-        # Shuffle posts randomly
         random.shuffle(tweets)
 
         # Fetch comments for each tweet
@@ -569,11 +571,36 @@ def home():
             t["comment_count"] = len(t["comments"])
             t["liked_by_user"] = False  # Needed for _tweet.html
 
+        # ----------------- Who to follow suggestions -----------------
+        # Get 5 random users excluding the current user
+        cursor.execute("""
+            SELECT u.user_pk, u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
+            FROM users u
+            WHERE u.user_pk != %s
+            ORDER BY RAND()
+            LIMIT 5
+        """, (user["user_pk"],))
+        suggestions = cursor.fetchall()
+
+        # Get list of users the current user already follows
+        cursor.execute("""
+            SELECT follow_target_fk
+            FROM follows
+            WHERE follow_user_fk = %s
+        """, (user["user_pk"],))
+        following_list = [row["follow_target_fk"] for row in cursor.fetchall()]
+
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-    return render_template("home.html", tweets=tweets, user=user)
+    return render_template(
+        "home.html",
+        tweets=tweets,
+        user=user,
+        suggestions=suggestions,
+        following_list=following_list
+    )
 
 # COMPONENT FOR AJAX UPDATES
 @app.get("/home-comp")
@@ -620,7 +647,6 @@ def home_comp():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 # PROFILE #############################
 @app.get("/profile")
@@ -1084,20 +1110,21 @@ def api_follow():
     try:
         db, cursor = x.db()
 
-        # Prevent duplicates
+        # Prevent duplicate follows
         cursor.execute(
-            "SELECT 1 FROM follows WHERE follow_follower_fk=%s AND follow_following_fk=%s LIMIT 1",
+            "SELECT 1 FROM follows WHERE follow_user_fk=%s AND follow_target_fk=%s LIMIT 1",
             (user["user_pk"], following_pk)
         )
         if cursor.fetchone():
-            return jsonify({"success": True})  # Already following
+            return jsonify({"success": True})
 
         follow_pk = uuid.uuid4().hex
         cursor.execute(
-            "INSERT INTO follows (follow_pk, follow_follower_fk, follow_following_fk) VALUES (%s, %s, %s)",
+            "INSERT INTO follows (follow_pk, follow_user_fk, follow_target_fk) VALUES (%s, %s, %s)",
             (follow_pk, user["user_pk"], following_pk)
         )
         db.commit()
+
         return jsonify({"success": True})
 
     except Exception as e:
@@ -1106,7 +1133,6 @@ def api_follow():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 # api-unfollow
 @app.route("/api-unfollow", methods=["POST"])
@@ -1121,18 +1147,22 @@ def api_unfollow():
 
     try:
         db, cursor = x.db()
+
         cursor.execute(
-            "DELETE FROM follows WHERE follow_follower_fk=%s AND follow_following_fk=%s",
+            "DELETE FROM follows WHERE follow_user_fk=%s AND follow_target_fk=%s",
             (user["user_pk"], following_pk)
         )
         db.commit()
+
         return jsonify({"success": True})
+
     except Exception as e:
         if "db" in locals(): db.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
 
 # SOFT DELETE
 @app.post("/delete-user")

@@ -95,7 +95,6 @@ function show_elements(selectors){
     }
 }
 
-
 // ##############################
 function mix_switch_page(mix_page, push_to_history = true){
     try{
