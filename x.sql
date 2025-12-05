@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 05. 12 2025 kl. 13:14:00
+-- Genereringstid: 05. 12 2025 kl. 21:35:58
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -25,9 +25,29 @@ DELIMITER $$
 --
 -- Procedurer
 --
-CREATE DEFINER=`root`@`%` PROCEDURE `add_post` (IN `userID` CHAR(32), IN `message` VARCHAR(280), IN `imagePath` VARCHAR(255))   BEGIN
-  INSERT INTO posts(post_pk, post_user_fk, post_message, post_image_path, post_total_likes)
-  VALUES (UUID(), userID, message, imagePath, 0);
+CREATE DEFINER=`root`@`%` PROCEDURE `add_comment` (IN `p_post_fk` VARCHAR(50), IN `p_user_fk` VARCHAR(20), IN `p_message` TEXT)   BEGIN
+    INSERT INTO comments (comment_pk, comment_post_fk, comment_user_fk, comment_message, created_at)
+    VALUES (UUID(), p_post_fk, p_user_fk, p_message, NOW());
+    
+    -- Update total comments in posts table
+    UPDATE posts
+    SET post_total_comments = post_total_comments + 1
+    WHERE post_pk = p_post_fk;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `add_like` (IN `p_post_fk` VARCHAR(50), IN `p_user_fk` VARCHAR(20))   BEGIN
+    INSERT INTO likes (like_pk, like_post_fk, like_user_fk, created_at)
+    VALUES (UUID(), p_post_fk, p_user_fk, NOW());
+    
+    -- Update total likes in posts table
+    UPDATE posts
+    SET post_total_likes = post_total_likes + 1
+    WHERE post_pk = p_post_fk;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `add_post` (IN `p_user_fk` VARCHAR(20), IN `p_message` TEXT, IN `p_image_path` VARCHAR(255))   BEGIN
+    INSERT INTO posts (post_pk, post_user_fk, post_message, post_total_likes, post_image_path, created_at, post_total_comments)
+    VALUES (UUID(), p_user_fk, p_message, 0, p_image_path, NOW(), 0);
 END$$
 
 CREATE DEFINER=`root`@`%` PROCEDURE `create_post` (IN `p_user_pk` CHAR(32), IN `p_message` VARCHAR(280), IN `p_image` VARCHAR(255))   BEGIN
@@ -35,15 +55,20 @@ CREATE DEFINER=`root`@`%` PROCEDURE `create_post` (IN `p_user_pk` CHAR(32), IN `
   VALUES(UUID(), p_user_pk, p_message, p_image, 0, NOW());
 END$$
 
-CREATE DEFINER=`root`@`%` PROCEDURE `follow_user` (IN `followerID` CHAR(32), IN `targetID` CHAR(32))   BEGIN
-  INSERT INTO follows(follow_pk, follow_user_fk, follow_target_fk)
-  VALUES (UUID(), followerID, targetID);
+CREATE DEFINER=`root`@`%` PROCEDURE `follow_user` (IN `p_user_fk` VARCHAR(20), IN `p_target_fk` VARCHAR(20))   BEGIN
+    INSERT INTO follows (follow_pk, follow_user_fk, follow_target_fk, created_at)
+    VALUES (UUID(), p_user_fk, p_target_fk, NOW());
 END$$
 
 CREATE DEFINER=`root`@`%` PROCEDURE `get_profile` (IN `p_user_pk` CHAR(32))   BEGIN
   SELECT * FROM users WHERE user_pk = p_user_pk;
   SELECT * FROM posts WHERE post_user_fk = p_user_pk ORDER BY created_at DESC;
   SELECT * FROM follows WHERE follow_target_fk = p_user_pk;
+END$$
+
+CREATE DEFINER=`root`@`%` PROCEDURE `unfollow_user` (IN `p_user_fk` VARCHAR(20), IN `p_target_fk` VARCHAR(20))   BEGIN
+    DELETE FROM follows 
+    WHERE follow_user_fk = p_user_fk AND follow_target_fk = p_target_fk;
 END$$
 
 DELIMITER ;
@@ -91,38 +116,28 @@ CREATE TABLE `comments` (
 --
 
 INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `comment_message`, `created_at`) VALUES
-('1ad9fe5649bc4c97b91aacc3217bf570', '4e0180d683f64f34a3acab709854e3b4', 'u008', 'this is one more', '2025-12-04 11:25:04'),
-('1c1c316d427546979e69b34607c7dc06', 'ff81e236f1974a5a9364efbf2b896677', 'u008', 'Oh that\'s nice', '2025-12-04 13:05:25'),
-('ae80718d884249f6907a4b72b37c4342', '1f6bffac2d2245278f106472f2bffe0c', 'u008', 'It\'s actually an icon', '2025-12-05 13:04:40'),
-('c001', 'p001', 'u002', 'Nice post!', '2025-11-27 13:01:44'),
-('c002', 'p001', 'u003', 'I agree!', '2025-11-27 13:01:44'),
-('c004', 'p004', 'u004', 'Cool update!', '2025-11-27 13:01:44'),
-('c006', 'p006', 'u003', 'Good morning!', '2025-11-27 13:01:44'),
-('c007', 'p003', 'u002', 'Testing works fine.', '2025-11-27 09:22:30'),
-('c008', 'p005', 'u007', 'Excited to see more posts!', '2025-11-27 10:12:44'),
-('c009', 'p006', 'u001', 'Hope everyone has a great day!', '2025-11-27 08:30:12'),
-('c010', 'p007', 'u008', 'Loving this platform too!', '2025-11-27 11:45:50'),
-('c011', 'p004', 'u002', 'Thanks for sharing!', '2025-11-27 13:10:20'),
-('c012', 'p005', 'u003', 'Very helpful post.', '2025-11-27 13:12:33'),
-('eac6babb3f4c45fea310839cbc4e1f6b', '7a74bb4cd669417785747d099d022cae', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'iucsvdvvbuvdubnsnsi', '2025-12-04 12:47:51'),
-('f60900f43e67435c808bd4fd4f2ab427', '4e0180d683f64f34a3acab709854e3b4', 'u008', 'this is a comment', '2025-12-04 11:24:58');
+('c001', 'p001', 'u002', 'Nice post!', '2025-11-01 10:30:00'),
+('c002', 'p002', 'u003', 'Welcome!', '2025-11-02 12:00:00'),
+('c003', 'p002', 'u004', 'Excited to see more.', '2025-11-02 12:05:00'),
+('c004', 'p005', 'u006', 'Good morning!', '2025-11-05 08:15:00'),
+('c005', 'p005', 'u007', 'Have a great day!', '2025-11-05 08:20:00');
 
 --
 -- Triggers/udløsere `comments`
 --
 DELIMITER $$
 CREATE TRIGGER `after_comment_delete` AFTER DELETE ON `comments` FOR EACH ROW BEGIN
-  UPDATE posts
-  SET post_total_comments = post_total_comments - 1
-  WHERE post_pk = OLD.comment_post_fk;
+    UPDATE posts
+    SET post_total_comments = post_total_comments - 1
+    WHERE post_pk = OLD.comment_post_fk;
 END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `after_comment_insert` AFTER INSERT ON `comments` FOR EACH ROW BEGIN
-  UPDATE posts
-  SET post_total_comments = post_total_comments + 1
-  WHERE post_pk = NEW.comment_post_fk;
+    UPDATE posts
+    SET post_total_comments = post_total_comments + 1
+    WHERE post_pk = NEW.comment_post_fk;
 END
 $$
 DELIMITER ;
@@ -145,11 +160,20 @@ CREATE TABLE `follows` (
 --
 
 INSERT INTO `follows` (`follow_pk`, `follow_user_fk`, `follow_target_fk`, `created_at`) VALUES
-('f001', 'u001', 'u002', '2025-11-27 13:01:44'),
-('f002', 'u003', 'u001', '2025-11-27 13:01:44'),
-('f003', 'u004', 'u001', '2025-11-27 13:01:44'),
-('f004', 'u005', 'u002', '2025-11-27 13:01:44'),
-('f005', 'u006', 'u003', '2025-11-27 13:01:44');
+('f001', 'u001', 'u002', '2025-11-01 09:00:00'),
+('f002', 'u002', 'u003', '2025-11-01 09:05:00'),
+('f003', 'u003', 'u001', '2025-11-01 09:10:00'),
+('f004', 'u004', 'u005', '2025-11-01 09:15:00'),
+('f005', 'u005', 'u004', '2025-11-01 09:20:00'),
+('f006', 'u006', 'u002', '2025-11-01 09:25:00'),
+('f007', 'u007', 'u003', '2025-11-01 09:30:00'),
+('f009', 'u009', 'u005', '2025-11-01 09:40:00'),
+('f010', 'u010', 'u006', '2025-11-01 09:45:00'),
+('f011', 'u011', 'u007', '2025-11-01 09:50:00'),
+('f012', 'u001', 'u008', '2025-11-01 09:55:00'),
+('f013', 'u002', 'u009', '2025-11-01 10:00:00'),
+('f014', 'u003', 'u010', '2025-11-01 10:05:00'),
+('f015', 'u004', 'u011', '2025-11-01 10:10:00');
 
 -- --------------------------------------------------------
 
@@ -190,43 +214,35 @@ CREATE TABLE `likes` (
 --
 
 INSERT INTO `likes` (`like_pk`, `like_post_fk`, `like_user_fk`, `created_at`) VALUES
-('l001', 'p001', 'u002', '2025-11-27 13:01:44'),
-('l002', 'p002', 'u001', '2025-11-27 13:01:44'),
-('l003', 'p003', 'u004', '2025-11-27 13:01:44'),
-('l004', 'p004', 'u001', '2025-11-27 13:01:44'),
-('l005', 'p005', 'u003', '2025-11-27 13:01:44'),
-('l006', 'p006', 'u005', '2025-11-27 13:01:44'),
-('l007', 'p007', 'u006', '2025-11-27 13:01:44');
+('l001', 'p001', 'u003', '2025-11-01 10:05:00'),
+('l002', 'p001', 'u004', '2025-11-01 10:06:00'),
+('l003', 'p002', 'u001', '2025-11-02 11:35:00'),
+('l004', 'p002', 'u004', '2025-11-02 11:40:00'),
+('l005', 'p002', 'u005', '2025-11-02 11:45:00'),
+('l006', 'p002', 'u006', '2025-11-02 11:50:00'),
+('l007', 'p002', 'u007', '2025-11-02 11:55:00'),
+('l008', 'p004', 'u001', '2025-11-04 15:00:00'),
+('l009', 'p005', 'u002', '2025-11-05 08:05:00'),
+('l010', 'p005', 'u003', '2025-11-05 08:06:00'),
+('l011', 'p005', 'u004', '2025-11-05 08:07:00');
 
 --
 -- Triggers/udløsere `likes`
 --
 DELIMITER $$
 CREATE TRIGGER `after_like_delete` AFTER DELETE ON `likes` FOR EACH ROW BEGIN
-  UPDATE posts 
-  SET post_total_likes = post_total_likes - 1
-  WHERE post_pk = OLD.like_post_fk;
+    UPDATE posts
+    SET post_total_likes = post_total_likes - 1
+    WHERE post_pk = OLD.like_post_fk;
 END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `after_like_insert` AFTER INSERT ON `likes` FOR EACH ROW BEGIN
-  UPDATE posts 
-  SET post_total_likes = post_total_likes + 1
-  WHERE post_pk = NEW.like_post_fk;
+    UPDATE posts
+    SET post_total_likes = post_total_likes + 1
+    WHERE post_pk = NEW.like_post_fk;
 END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `trg_after_like_delete` AFTER DELETE ON `likes` FOR EACH ROW UPDATE posts
-SET post_total_likes = post_total_likes - 1
-WHERE post_pk = OLD.like_post_fk
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `trg_after_like_insert` AFTER INSERT ON `likes` FOR EACH ROW UPDATE posts 
-SET post_total_likes = post_total_likes + 1 
-WHERE post_pk = NEW.like_post_fk
 $$
 DELIMITER ;
 
@@ -238,8 +254,11 @@ DELIMITER ;
 --
 CREATE TABLE `most_liked_posts` (
 `post_pk` char(32)
+,`post_user_fk` char(32)
 ,`post_message` varchar(280)
 ,`post_total_likes` bigint(20) unsigned
+,`post_image_path` varchar(255)
+,`created_at` datetime
 );
 
 -- --------------------------------------------------------
@@ -263,31 +282,26 @@ CREATE TABLE `posts` (
 --
 
 INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`, `post_total_comments`) VALUES
-('1f6bffac2d2245278f106472f2bffe0c', 'u008', 'What a great flower', 0, 'a7d5d49579e7416680800fc28d25f105_flower.png', '2025-12-05 13:04:27', 1),
-('4e0180d683f64f34a3acab709854e3b4', 'u008', 'yolo', 0, '', '2025-12-04 09:12:45', 2),
-('7a74bb4cd669417785747d099d022cae', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'gheoiofjv', 0, '', '2025-12-04 10:37:21', 1),
-('ff81e236f1974a5a9364efbf2b896677', 'u008', 'A poster', 0, '343839ff7c2e4b79a3159ea56c194642_SoMe_salling_brnecirkel_-_bliv_medlem.png', '2025-12-01 13:22:58', 1),
-('p001', 'u008', 'Hello world! I\'m such an oooold lady', 0, 'post_1.jpg', '2025-11-27 13:01:44', 0),
-('p002', 'u002', 'My first post', 0, 'cake.webp', '2025-11-21 13:01:44', 0),
-('p003', 'u003', 'Testing posts', 0, 'post_2.jpg', '2025-11-27 13:01:44', 0),
-('p004', 'u002', 'Another day, another post', 2, 'autumn.png', '2025-11-27 13:01:44', 0),
-('p005', 'u004', 'Excited to join!', 0, 'post_3.jpg', '2025-11-29 18:30:40', 0),
-('p006', 'u005', 'Good morning everyone', 0, 'post_5.jpg', '2025-11-28 14:01:44', 0),
-('p007', 'u006', 'Loving this platform', 6, 'post_4.jpg', '2025-11-27 13:01:44', 0),
-('p008', 'u009', 'Just joined this platform!', 0, NULL, '2025-12-04 14:00:00', 0),
-('p009', 'u010', 'Loving the new features here!', 2, NULL, '2025-12-02 14:05:00', 1),
-('p010', 'u011', 'Anyone wants to collaborate on a project?', 0, NULL, '2025-12-04 15:07:49', 0),
-('p011', 'admin001', 'Welcome!!', 0, 'coffeee.png', '2025-11-29 13:09:40', 0),
-('p012', 'u003', 'Coffee is life ☕️', 3, 'coffeee.png', '2025-12-04 11:04:00', 1),
-('p013', 'u004', 'Just finished my final exam!! 🎉', 5, NULL, '2025-11-01 12:14:20', 2),
-('p014', 'u011', 'Looking for collaboration partners 👀', 1, NULL, '2025-11-03 13:50:11', 0),
-('p015', 'u010', 'New coding setup installed today 🔥', 4, 'setup.jpg', '2025-12-04 14:26:41', 3),
-('p016', 'u009', 'Snow is finally here ❄️', 2, 'snow.jpg', '2025-12-04 15:01:55', 0),
-('p017', 'u008', 'Making dinner… wish me luck 😂', 0, NULL, '2025-11-04 15:18:38', 0),
-('p018', 'u002', 'This platform is growing fast!', 7, NULL, '2025-12-02 15:25:10', 1),
-('p019', 'u006', 'Running 10km today, let’s go 💪', 6, 'run.jpg', '2025-12-04 15:30:22', 2),
-('p020', 'u005', 'Throwback to last summer ☀️', 3, 'summer.jpg', '2025-12-04 15:33:41', 0),
-('p021', 'admin001', 'Remember to be kind online ❤️', 0, 'kindness.jpg', '2025-12-04 15:37:52', 0);
+('p001', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'Hello world!', 2, 'post1.jpg', '2025-11-01 10:00:00', 1),
+('p002', 'u002', 'My first post!', 5, 'post2.jpg', '2025-11-02 11:30:00', 2),
+('p003', 'u003', 'Loving this platform.', 0, NULL, '2025-11-03 09:20:00', 0),
+('p004', 'u004', 'Check out this picture.', 1, 'post4.jpg', '2025-11-04 14:45:00', 0),
+('p005', 'u005', 'Good morning everyone!', 3, NULL, '2025-11-05 08:00:00', 2),
+('p006', 'u006', 'Loving this platform', 6, 'post_4.jpg', '2025-11-27 13:01:44', 0),
+('p007', 'u007', 'Just joined this platform!', 0, NULL, '2025-12-04 14:00:00', 0),
+('p008', 'u008', 'Loving the new features here!', 2, NULL, '2025-12-02 14:05:00', 1),
+('p009', 'u009', 'Anyone wants to collaborate on a project?', 0, NULL, '2025-12-04 15:07:49', 0),
+('p010', 'admin001', 'Welcome!!', 0, 'coffeee.png', '2025-11-29 13:09:40', 0),
+('p011', 'u003', 'Coffee is life ☕️', 3, 'coffeee.png', '2025-12-04 11:04:00', 1),
+('p012', 'u004', 'Just finished my final exam!! 🎉', 5, NULL, '2025-11-01 12:14:20', 2),
+('p013', 'u011', 'Looking for collaboration partners 👀', 1, NULL, '2025-11-03 13:50:11', 0),
+('p014', 'u010', 'New coding setup installed today 🔥', 4, 'setup.jpg', '2025-12-04 14:26:41', 3),
+('p015', 'u009', 'Snow is finally here ❄️', 2, 'snow.jpg', '2025-12-04 15:01:55', 0),
+('p016', 'u008', 'Making dinner… wish me luck 😂', 0, NULL, '2025-11-04 15:18:38', 0),
+('p017', 'u002', 'This platform is growing fast!', 7, NULL, '2025-12-02 15:25:10', 1),
+('p018', 'u006', 'Running 10km today, let’s go 💪', 6, 'run.jpg', '2025-12-04 15:30:22', 2),
+('p019', 'u005', 'Throwback to last summer ☀️', 3, 'summer.jpg', '2025-12-04 15:33:41', 0),
+('p020', 'admin001', 'Remember to be kind online ❤️', 0, 'kindness.jpg', '2025-12-04 15:37:52', 0);
 
 -- --------------------------------------------------------
 
@@ -310,11 +324,11 @@ CREATE TABLE `trends` (
 --
 
 INSERT INTO `trends` (`trend_pk`, `trend_title`, `trend_message`, `trend_user_fk`, `trend_image`, `is_active`, `created_at`) VALUES
-('t001', 'New Launch', 'A new rocket has been sent to the moon', 'u001', 'rocket.png', 1, '2025-11-29 22:14:26'),
-('t002', 'Politics are Rotten', 'Everyone talks, few act', 'u002', 'politics.png', 1, '2025-11-29 09:14:34'),
-('t003', 'Tech Update', 'New AI model released', 'u003', 'ai.png', 1, '2025-11-29 12:50:26'),
-('t004', 'Sports', 'Big game tonight', 'u001', 'sports.png', 1, '2025-11-29 12:14:00'),
-('t005', 'Music Vibes', 'Check out the latest rap album drops!', 'u008', 'music.png', 1, '2025-12-04 09:12:45'),
+('t001', 'New Feature!', 'Check out our new posting feature.', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'trend1.jpg', 1, '2025-11-01 12:00:00'),
+('t002', 'Weekly Challenge', 'Post your best photo this week.', 'u002', 'trend2.jpg', 1, '2025-11-02 08:00:00'),
+('t003', 'User Spotlight', 'Highlighting amazing users.', 'u003', 'trend3.jpg', 1, '2025-11-03 10:00:00'),
+('t004', 'Community Update', 'New improvements are live!', 'u004', NULL, 1, '2025-11-04 11:00:00'),
+('t005', 'Monthly Highlights', 'Top posts of the month.', 'u005', 'trend5.jpg', 1, '2025-11-05 09:00:00'),
 ('t006', 'Coding Marathon', 'Join the weekend hackathon!', 'u010', 'coding.png', 1, '2025-12-04 10:37:21'),
 ('t007', 'Healthy Living', '5 tips to stay fit this winter', 'u009', 'fitness.png', 1, '2025-12-04 11:05:12'),
 ('t008', 'Travel Diaries', 'Top 10 places to visit in 2026', 'u011', 'travel.png', 1, '2025-12-04 13:48:59'),
@@ -324,7 +338,12 @@ INSERT INTO `trends` (`trend_pk`, `trend_title`, `trend_message`, `trend_user_fk
 ('t012', 'Gaming Hype', 'Massive update released in CyberQuest X', 'u006', 'gaming.png', 1, '2025-12-04 15:18:00'),
 ('t013', 'Pet Lovers', '10 cutest dog photos trending right now', 'u009', 'dogs.png', 1, '2025-12-04 15:20:42'),
 ('t014', 'Student Life', 'How to survive exams with less stress', 'u011', 'student.png', 1, '2025-12-04 15:33:19'),
-('t015', 'Eco News', 'New climate agreement signed globally', 'u002', 'climate.png', 1, '2025-12-04 15:36:20');
+('t015', 'Eco News', 'New climate agreement signed globally', 'u002', 'climate.png', 1, '2025-12-04 15:36:20'),
+('t016', 'New Feature!', 'Check out our new posting feature.', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'trend1.jpg', 1, '2025-11-01 12:00:00'),
+('t017', 'Weekly Challenge', 'Post your best photo this week.', 'u002', 'trend2.jpg', 1, '2025-11-02 08:00:00'),
+('t018', 'User Spotlight', 'Highlighting amazing users.', 'u003', 'trend3.jpg', 1, '2025-11-03 10:00:00'),
+('t019', 'Community Update', 'New improvements are live!', 'u004', NULL, 1, '2025-11-04 11:00:00'),
+('t020', 'Monthly Highlights', 'Top posts of the month.', 'u005', 'trend5.jpg', 1, '2025-11-05 09:00:00');
 
 -- --------------------------------------------------------
 
@@ -354,16 +373,16 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `reset_token`, `reset_expiry`, `user_verification_key`, `user_verified_at`, `user_role`, `user_language_fk`, `is_deleted`) VALUES
-('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.jpg', NULL, NULL, '\'\'', 1764421513, 'admin', NULL, 0),
+('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.jpg', NULL, NULL, '', 1764421513, 'admin', NULL, 0),
 ('f32f0425e18b4f8dbc33f0eb51331fbf', 'soph1155@stud.ek.dk', 'scrypt:32768:8:1$AS75Y7b9DW3wNUo1$d19735a9cdfcfc7a2ad9c47377e646f3d7eaf70aca31437d2481b3008255adff64ca665a5ec4bc214095ee1f139042460cadbb0040ae1a88246db63ffe4640e4', 'Tester', 'Sopheren', 'Testing', 'unknown.jpg', NULL, NULL, '', 1764707764, 'user', NULL, 0),
 ('t999', 't999@example.com', 'dummyhash', 'testuser999', 'Test', 'User', 'avatar_2.jpg', NULL, NULL, NULL, 0, 'user', NULL, 0),
-('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Amin', 'Jensen', 'avatar_7.jpg', NULL, NULL, '\'\'', 0, 'user', NULL, 0),
+('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Amin', 'Jensen', 'avatar_7.jpg', NULL, NULL, '', 0, 'user', NULL, 0),
 ('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', 'Gertsen', 'avatar_2.jpg', NULL, NULL, '1234567890abcdef1234567890abcdef', 0, 'user', NULL, 0),
 ('u003', 'mille@example.com', 'scrypt:hash3', 'mille', 'Mille', 'Sørensen', 'avatar_3.jpg', NULL, NULL, 'key456', 0, 'user', NULL, 0),
-('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', NULL, NULL, '\'\'', 1700001000, 'user', NULL, 0),
-('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', 'Eriksen', 'avatar_5.jpg', NULL, NULL, '\'\'', 1700002000, 'user', NULL, 0),
+('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', NULL, NULL, '', 1700001000, 'user', NULL, 0),
+('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', 'Eriksen', 'avatar_5.jpg', NULL, NULL, '', 1700002000, 'user', NULL, 0),
 ('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', 'Hansen', 'avatar_6.jpg', NULL, NULL, 'key789', 0, 'user', NULL, 0),
-('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar_1.jpg', NULL, NULL, '\'\'', 1764249116, 'user', NULL, 1),
+('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar_1.jpg', NULL, NULL, '', 1764249116, 'user', NULL, 1),
 ('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$E6C1XsNIuJRQr6p9$a3bc4f2e87c15f2f9889505012b5f07dcdbc9dbb4a3c11ff6e3c03a5c87463c7539ecd1678fc3473a55f60e0023322f17a7e52dfb96947d0841c8aab421a81b4', 'teinvig', 'Sophie', 'Teinvig Kjer', 'avatar.jpg', NULL, NULL, '', 1764708165, 'user', NULL, 0),
 ('u009', 'lina@example.com', 'scrypt:hash7', 'lina', 'Lina', 'Nielsen', 'avatar_9.jpg', NULL, NULL, '', 0, 'user', NULL, 0),
 ('u010', 'jonas@example.com', 'scrypt:hash8', 'jonas', 'Jonas', 'Hansen', 'avatar_10.jpg', NULL, NULL, '', 0, 'user', NULL, 0),
@@ -376,7 +395,7 @@ INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, 
 -- (Se nedenfor for det aktuelle view)
 --
 CREATE TABLE `user_post_counts` (
-`user_username` varchar(20)
+`user_pk` char(32)
 ,`total_posts` bigint(21)
 );
 
@@ -389,8 +408,7 @@ CREATE TABLE `user_post_counts` (
 --
 ALTER TABLE `admin`
   ADD PRIMARY KEY (`admin_pk`),
-  ADD UNIQUE KEY `admin_email` (`admin_email`),
-  ADD UNIQUE KEY `unique_admin_email` (`admin_email`);
+  ADD UNIQUE KEY `admin_email` (`admin_email`);
 
 --
 -- Indeks for tabel `comments`
@@ -407,8 +425,7 @@ ALTER TABLE `follows`
   ADD PRIMARY KEY (`follow_pk`),
   ADD UNIQUE KEY `unique_follow` (`follow_user_fk`,`follow_target_fk`),
   ADD KEY `idx_follow_target_fk` (`follow_target_fk`),
-  ADD KEY `idx_follow_user` (`follow_user_fk`),
-  ADD KEY `idx_follow_target` (`follow_target_fk`);
+  ADD KEY `idx_follow_user` (`follow_user_fk`);
 
 --
 -- Indeks for tabel `languages`
@@ -459,7 +476,7 @@ ALTER TABLE `users`
 --
 DROP TABLE IF EXISTS `most_liked_posts`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `most_liked_posts`  AS SELECT `posts`.`post_pk` AS `post_pk`, `posts`.`post_message` AS `post_message`, `posts`.`post_total_likes` AS `post_total_likes` FROM `posts` ORDER BY `posts`.`post_total_likes` DESC ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `most_liked_posts`  AS SELECT `posts`.`post_pk` AS `post_pk`, `posts`.`post_user_fk` AS `post_user_fk`, `posts`.`post_message` AS `post_message`, `posts`.`post_total_likes` AS `post_total_likes`, `posts`.`post_image_path` AS `post_image_path`, `posts`.`created_at` AS `created_at` FROM `posts` ORDER BY `posts`.`post_total_likes` DESC LIMIT 0, 10 ;
 
 -- --------------------------------------------------------
 
@@ -468,7 +485,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `most_li
 --
 DROP TABLE IF EXISTS `user_post_counts`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `user_post_counts`  AS SELECT `u`.`user_username` AS `user_username`, count(`p`.`post_pk`) AS `total_posts` FROM (`users` `u` left join `posts` `p` on(`u`.`user_pk` = `p`.`post_user_fk`)) GROUP BY `u`.`user_pk` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `user_post_counts`  AS SELECT `posts`.`post_user_fk` AS `user_pk`, count(0) AS `total_posts` FROM `posts` GROUP BY `posts`.`post_user_fk` ORDER BY count(0) DESC ;
 
 --
 -- Begrænsninger for dumpede tabeller
@@ -479,32 +496,27 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `user_po
 --
 ALTER TABLE `comments`
   ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`comment_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`comment_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_comments_post` FOREIGN KEY (`comment_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_comments_user` FOREIGN KEY (`comment_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`comment_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
 
 --
 -- Begrænsninger for tabel `follows`
 --
 ALTER TABLE `follows`
-  ADD CONSTRAINT `fk_follows_target` FOREIGN KEY (`follow_target_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_follows_user` FOREIGN KEY (`follow_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `follows_ibfk_1` FOREIGN KEY (`follow_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `follows_ibfk_2` FOREIGN KEY (`follow_target_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_follows_target` FOREIGN KEY (`follow_target_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_follows_user` FOREIGN KEY (`follow_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
 
 --
 -- Begrænsninger for tabel `likes`
 --
 ALTER TABLE `likes`
   ADD CONSTRAINT `fk_likes_post` FOREIGN KEY (`like_post_fk`) REFERENCES `posts` (`post_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_likes_user` FOREIGN KEY (`like_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_likes_user` FOREIGN KEY (`like_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
 
 --
 -- Begrænsninger for tabel `posts`
 --
 ALTER TABLE `posts`
-  ADD CONSTRAINT `fk_post_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_posts_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_post_user` FOREIGN KEY (`post_user_fk`) REFERENCES `users` (`user_pk`) ON DELETE CASCADE;
 
 --
 -- Begrænsninger for tabel `trends`
