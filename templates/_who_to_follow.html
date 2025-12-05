@@ -1,5 +1,5 @@
 <div class="d-flex a-items-center mb-2">
-    {% set sugg_avatar = suggestion.user_avatar_path or 'avatar_1.jpg' %}
+    {% set sugg_avatar = suggestion.user_avatar_path or 'avatar.jpg' %}
     <img src="{% if sugg_avatar.startswith('http') %}{{ sugg_avatar }}{% else %}{{ url_for('static', filename='images/' + sugg_avatar) }}{% endif %}"
         class="w-8 h-8 rounded-full" alt="Profile Picture">
 

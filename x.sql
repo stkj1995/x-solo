@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 05. 12 2025 kl. 12:25:44
+-- Genereringstid: 05. 12 2025 kl. 13:14:00
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 
@@ -93,6 +93,7 @@ CREATE TABLE `comments` (
 INSERT INTO `comments` (`comment_pk`, `comment_post_fk`, `comment_user_fk`, `comment_message`, `created_at`) VALUES
 ('1ad9fe5649bc4c97b91aacc3217bf570', '4e0180d683f64f34a3acab709854e3b4', 'u008', 'this is one more', '2025-12-04 11:25:04'),
 ('1c1c316d427546979e69b34607c7dc06', 'ff81e236f1974a5a9364efbf2b896677', 'u008', 'Oh that\'s nice', '2025-12-04 13:05:25'),
+('ae80718d884249f6907a4b72b37c4342', '1f6bffac2d2245278f106472f2bffe0c', 'u008', 'It\'s actually an icon', '2025-12-05 13:04:40'),
 ('c001', 'p001', 'u002', 'Nice post!', '2025-11-27 13:01:44'),
 ('c002', 'p001', 'u003', 'I agree!', '2025-11-27 13:01:44'),
 ('c004', 'p004', 'u004', 'Cool update!', '2025-11-27 13:01:44'),
@@ -262,6 +263,7 @@ CREATE TABLE `posts` (
 --
 
 INSERT INTO `posts` (`post_pk`, `post_user_fk`, `post_message`, `post_total_likes`, `post_image_path`, `created_at`, `post_total_comments`) VALUES
+('1f6bffac2d2245278f106472f2bffe0c', 'u008', 'What a great flower', 0, 'a7d5d49579e7416680800fc28d25f105_flower.png', '2025-12-05 13:04:27', 1),
 ('4e0180d683f64f34a3acab709854e3b4', 'u008', 'yolo', 0, '', '2025-12-04 09:12:45', 2),
 ('7a74bb4cd669417785747d099d022cae', 'f32f0425e18b4f8dbc33f0eb51331fbf', 'gheoiofjv', 0, '', '2025-12-04 10:37:21', 1),
 ('ff81e236f1974a5a9364efbf2b896677', 'u008', 'A poster', 0, '343839ff7c2e4b79a3159ea56c194642_SoMe_salling_brnecirkel_-_bliv_medlem.png', '2025-12-01 13:22:58', 1),
@@ -353,7 +355,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, `user_first_name`, `user_last_name`, `user_avatar_path`, `reset_token`, `reset_expiry`, `user_verification_key`, `user_verified_at`, `user_role`, `user_language_fk`, `is_deleted`) VALUES
 ('admin001', 'admin@example.com', 'scrypt:hashAdmin', 'superadmin', 'Super', 'Admin', 'avatar_admin.jpg', NULL, NULL, '\'\'', 1764421513, 'admin', NULL, 0),
-('f32f0425e18b4f8dbc33f0eb51331fbf', 'soph1155@stud.ek.dk', 'scrypt:32768:8:1$AS75Y7b9DW3wNUo1$d19735a9cdfcfc7a2ad9c47377e646f3d7eaf70aca31437d2481b3008255adff64ca665a5ec4bc214095ee1f139042460cadbb0040ae1a88246db63ffe4640e4', 'Tester', 'Sopheren', 'Testing', 'hands.png', NULL, NULL, '', 1764707764, 'user', NULL, 0),
+('f32f0425e18b4f8dbc33f0eb51331fbf', 'soph1155@stud.ek.dk', 'scrypt:32768:8:1$AS75Y7b9DW3wNUo1$d19735a9cdfcfc7a2ad9c47377e646f3d7eaf70aca31437d2481b3008255adff64ca665a5ec4bc214095ee1f139042460cadbb0040ae1a88246db63ffe4640e4', 'Tester', 'Sopheren', 'Testing', 'unknown.jpg', NULL, NULL, '', 1764707764, 'user', NULL, 0),
 ('t999', 't999@example.com', 'dummyhash', 'testuser999', 'Test', 'User', 'avatar_2.jpg', NULL, NULL, NULL, 0, 'user', NULL, 0),
 ('u001', 'u001@example.invalid', 'placeholder', 'user001', 'Amin', 'Jensen', 'avatar_7.jpg', NULL, NULL, '\'\'', 0, 'user', NULL, 0),
 ('u002', 'daniel@example.com', 'scrypt:hash2', 'daniel', 'Daniel', 'Gertsen', 'avatar_2.jpg', NULL, NULL, '1234567890abcdef1234567890abcdef', 0, 'user', NULL, 0),
@@ -361,8 +363,8 @@ INSERT INTO `users` (`user_pk`, `user_email`, `user_password`, `user_username`, 
 ('u004', 'anna@example.com', 'scrypt:hash4', 'anna', 'Anna', 'Larsen', 'avatar_4.jpg', NULL, NULL, '\'\'', 1700001000, 'user', NULL, 0),
 ('u005', 'max@example.com', 'scrypt:hash5', 'max', 'Max', 'Eriksen', 'avatar_5.jpg', NULL, NULL, '\'\'', 1700002000, 'user', NULL, 0),
 ('u006', 'lara@example.com', 'scrypt:hash6', 'lara', 'Lara', 'Hansen', 'avatar_6.jpg', NULL, NULL, 'key789', 0, 'user', NULL, 0),
-('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar.jpg', NULL, NULL, '\'\'', 1764249116, 'user', NULL, 1),
-('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$E6C1XsNIuJRQr6p9$a3bc4f2e87c15f2f9889505012b5f07dcdbc9dbb4a3c11ff6e3c03a5c87463c7539ecd1678fc3473a55f60e0023322f17a7e52dfb96947d0841c8aab421a81b4', 'teinvig', 'Sophie', 'Teinvig Kjer', 'u008_leaves.png', NULL, NULL, '', 1764708165, 'user', NULL, 0),
+('u007', 'test@example.com', 'hash', 'testuser', 'Kirsten', 'Abel Knudsen', 'avatar_1.jpg', NULL, NULL, '\'\'', 1764249116, 'user', NULL, 1),
+('u008', 'sophieteinvigkjer@gmail.com', 'scrypt:32768:8:1$E6C1XsNIuJRQr6p9$a3bc4f2e87c15f2f9889505012b5f07dcdbc9dbb4a3c11ff6e3c03a5c87463c7539ecd1678fc3473a55f60e0023322f17a7e52dfb96947d0841c8aab421a81b4', 'teinvig', 'Sophie', 'Teinvig Kjer', 'avatar.jpg', NULL, NULL, '', 1764708165, 'user', NULL, 0),
 ('u009', 'lina@example.com', 'scrypt:hash7', 'lina', 'Lina', 'Nielsen', 'avatar_9.jpg', NULL, NULL, '', 0, 'user', NULL, 0),
 ('u010', 'jonas@example.com', 'scrypt:hash8', 'jonas', 'Jonas', 'Hansen', 'avatar_10.jpg', NULL, NULL, '', 0, 'user', NULL, 0),
 ('u011', 'emil@example.com', 'scrypt:hash9', 'emil', 'Emil', 'Olsen', 'avatar_11.jpg', NULL, NULL, '', 0, 'user', NULL, 0);

@@ -2,16 +2,16 @@
     <div class="w-auto">
         {% set avatar_path = user.user_avatar_path or '' %}
         <img src="{% if avatar_path %}
-    {% if avatar_path.startswith('uploads/') %}
-        {{ url_for('static', filename=avatar_path) }}
-    {% elif avatar_path.startswith('http') %}
-        {{ avatar_path }}
-    {% else %}
-        {{ url_for('static', filename='images/' + avatar_path) }}
-    {% endif %}
-{% else %}
-    {{ url_for('static', filename='images/avatar.jpg') }}
-{% endif %}" alt="Profile" />
+                    {% if avatar_path.startswith('uploads/') %}
+                        {{ url_for('static', filename=avatar_path) }}
+                    {% elif avatar_path.startswith('http') %}
+                        {{ avatar_path }}
+                    {% else %}
+                        {{ url_for('static', filename='images/' + avatar_path) }}
+                    {% endif %}
+                 {% else %}
+                    {{ url_for('static', filename='images/avatar.jpg') }}
+                 {% endif %}" alt="Profile" />
     </div>
 
     {% include "___post_container.html" %}
@@ -19,7 +19,7 @@
 
 <div id="posts">
     {% for tweet in tweets %}
-    {# Determine the image for the post #}
+    {# Determine the post image URL with fallback #}
     {% set tweet_img = tweet.post_image_path %}
     {% if tweet_img %}
     {% if tweet_img.startswith('uploads/') %}
@@ -31,7 +31,7 @@
     {% set tweet_img_url = url_for('static', filename='images/unknown.jpg') %}
     {% endif %}
 
-    {# Determine the avatar for the user #}
+    {# Determine the tweet avatar URL with fallback #}
     {% set tweet_avatar = tweet.user_avatar_path %}
     {% if tweet_avatar %}
     {% if tweet_avatar.startswith('uploads/') %}
