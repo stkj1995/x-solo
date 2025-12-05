@@ -74,28 +74,69 @@
         </main>
 
         <aside>
-            <!-- What's happening now -->
-            <!-- What's happening now -->
-            <div class="border-1 border-c-gray:+50 rounded-md pa-3 mt-2">
-                <h2 class="text-120 text-c-black text-w-bold">What's happening now</h2>
+            <!-- Search field -->
+            <div class="border-1 border-c-gray:+50 rounded-md pa-3 mt-2 bg-white shadow-sm">
+                <h2 class="text-120 text-w-bold mb-3">Search</h2>
 
+                <!-- Search input + button wrapper -->
+                <div class="relative w-full">
+                    <input type="text" id="txt_search_for" placeholder="Search users, posts, trends..."
+                        class="pa-2 border border-c-blue:+20 rounded-md text-90 focus:outline-none focus:ring-2 focus:ring-c-tealblue pr-16">
+                    <button title="submit" id="btn_search"
+                        class="absolute right-1 top-1/2 -translate-y-1/2 px-4 py-1 bg-c-tealblue text-c-white rounded-md hover:bg-c-tealblue:+30 transition-colors">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+
+                <div id="search_results"
+                    class="d-none mt-3 border border-c-gray:+20 rounded-md max-h-[250px] overflow-y-auto bg-white shadow-inner">
+                    {% if users or posts %}
+                    <!-- Users -->
+                    {% for user in users %}
+                    <div class="d-flex a-items-center mb-2 p-2 rounded-md hover:bg-c-gray:+10 transition-colors">
+                        <img src="{{ url_for('static', filename='images/' ~ (user.user_avatar_path if user.user_avatar_path else 'unknown.jpg')) }}"
+                            class="w-8 h-8 rounded-full" alt="Profile Picture">
+                        <div class="w-full ml-2">
+                            <p class="text-100 font-semibold">{{ user.user_first_name }} {{ user.user_last_name }}
+                                <span class="text-c-gray:+40 text-70">@{{ user.user_username }}</span>
+                            </p>
+                        </div>
+                        <button
+                            class="px-4 py-1 text-c-white bg-c-black rounded-lg hover:bg-c-gray:+30 transition-colors">Follow</button>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Posts -->
+                    {% for post in posts %}
+                    <div
+                        class="border-t border-c-gray:+20 mt-2 pt-2 pa-2 rounded-md hover:bg-c-gray:+5 transition-colors">
+                        {{ post.post_message }}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-c-gray:+50 pa-2">No results found</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- What's happening now (Trends) -->
+            <div class="border-1 border-c-gray:+50 rounded-md pa-3 mt-2 bg-white shadow-sm">
+                <h2 class="text-120 text-c-black text-w-bold mb-2">What's happening now</h2>
                 <div id="trends-container" class="overflow-hidden max-h-[240px] transition-all">
                     {% for trend in trends %}
                     {% include "_trend.html" %}
                     {% endfor %}
                 </div>
-
-                <button id="show-more-trends" class="text-c-tealblue text-90 mt-2">More news</button>
+                <button id="show-more-trends" class="text-c-tealblue text-90 mt-2 hover:underline">More news</button>
             </div>
 
-
             <!-- Who to follow -->
-            <div class="mt-2 border-c-gray:+50 border-1 rounded-md pa-2" id="who_to_follow">
-                <h2 class="text-120 text-w-bold">Who to follow</h2>
+            <div class="mt-2 border-1 border-c-gray:+50 rounded-md pa-2 bg-white shadow-sm" id="who_to_follow">
+                <h2 class="text-120 text-w-bold mb-2">Who to follow</h2>
                 {% for suggestion in suggestions %}
                 {% include "_who_to_follow.html" %}
                 {% endfor %}
-                <button class="text-c-tealblue text-90">Show more</button>
+                <button class="text-c-tealblue text-90 mt-2 hover:underline">Show more</button>
             </div>
         </aside>
     </div>

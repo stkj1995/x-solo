@@ -20,7 +20,6 @@
     {% include "___post_container.html" %}
 </div>
 
-
 <div id="posts">
     {% for tweet in tweets %}
     {# Determine the image for the post #}
@@ -44,7 +43,7 @@
     {% set tweet_avatar_url = url_for('static', filename='images/' + tweet_avatar) %}
     {% endif %}
     {% else %}
-    {% set tweet_avatar_url = url_for('static', filename='images/avatar_1.jpg') %}
+    {% set tweet_avatar_url = url_for('static', filename='images/avatar1.jpg') %}
     {% endif %}
 
     {% include "_tweet.html" with context %}

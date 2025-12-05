@@ -271,7 +271,6 @@ function displayResults(data) {
     container.classList.remove("d-none");
 }
 
-
 // #############################
  document.addEventListener("DOMContentLoaded", () => {
 
