@@ -1,8 +1,17 @@
 <div class="d-flex flex-row ma-2">
     <div class="w-auto">
-        {% set avatar = 'avatar_1.jpg' %}
-        <img src="{{ url_for('static', filename='images/' + avatar) }}" class="w-8 h-8 rounded-full"
-            alt="Profile Picture">
+        {% set avatar_path = user.user_avatar_path or '' %}
+        <img src="{% if avatar_path %}
+    {% if avatar_path.startswith('uploads/') %}
+        {{ url_for('static', filename=avatar_path) }}
+    {% elif avatar_path.startswith('http') %}
+        {{ avatar_path }}
+    {% else %}
+        {{ url_for('static', filename='images/' + avatar_path) }}
+    {% endif %}
+{% else %}
+    {{ url_for('static', filename='images/avatar.jpg') }}
+{% endif %}" alt="Profile" />
     </div>
 
     {% include "___post_container.html" %}
@@ -31,7 +40,7 @@
     {% set tweet_avatar_url = url_for('static', filename='images/' + tweet_avatar) %}
     {% endif %}
     {% else %}
-    {% set tweet_avatar_url = url_for('static', filename='images/avatar_1.jpg') %}
+    {% set tweet_avatar_url = url_for('static', filename='images/avatar.jpg') %}
     {% endif %}
 
     {% include "_tweet.html" with context %}

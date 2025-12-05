@@ -5,16 +5,19 @@
 
   <!-- Show current avatar -->
   <div class="current_avatar">
-    {% set avatar_path = user.user_avatar_path %}
-    <img class="avatar_preview" src="{% if avatar_path.startswith('uploads/') %}
-         {{ url_for('static', filename=avatar_path) }}
-       {% elif avatar_path.startswith('http') %}
-         {{ avatar_path }}
-       {% elif avatar_path %}
-         {{ url_for('static', filename='images/' + avatar_path) }}
-       {% else %}
-         {{ url_for('static', filename='images/avatar_2.jpg') }}
-       {% endif %}" alt="Current profile picture" />
+    {% set avatar_path = user.user_avatar_path or '' %}
+    <img src="{% if avatar_path %}
+    {% if avatar_path.startswith('uploads/') %}
+        {{ url_for('static', filename=avatar_path) }}
+    {% elif avatar_path.startswith('http') %}
+        {{ avatar_path }}
+    {% else %}
+        {{ url_for('static', filename='images/' + avatar_path) }}
+    {% endif %}
+{% else %}
+    {{ url_for('static', filename='images/avatar.jpg') }}
+{% endif %}" alt="Profile" class="w-32 h-32 rounded-full mx-auto" />
+
   </div>
 
   <!-- Upload new image -->

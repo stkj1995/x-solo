@@ -599,7 +599,6 @@ def home():
         follows=follows
     )
 
-# COMPONENT FOR AJAX UPDATES
 # COMPONENT FOR AJAX UPDATES (feed only)
 @app.get("/home-comp")
 def home_comp():

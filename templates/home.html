@@ -47,12 +47,18 @@
             <button class="post-btn">Post</button>
 
             <div id="profile_tag">
-                {% set avatar = user.user_avatar_path or '' %}
-                <img src="{% if avatar %}
-         {{ url_for('static', filename='uploads/' + avatar) }}
-       {% else %}
-         {{ url_for('static', filename='images/avatar_1.jpg') }}
-       {% endif %}" alt="Profile">
+                {% set avatar_path = user.user_avatar_path or '' %}
+                <img src="{% if avatar_path %}
+    {% if avatar_path.startswith('uploads/') %}
+        {{ url_for('static', filename=avatar_path) }}
+    {% elif avatar_path.startswith('http') %}
+        {{ avatar_path }}
+    {% else %}
+        {{ url_for('static', filename='images/' + avatar_path) }}
+    {% endif %}
+{% else %}
+    {{ url_for('static', filename='images/avatar_1.jpg') }}
+{% endif %}" alt="Profile" />
 
                 <div>
                     <div class="name">{{ user.user_first_name }}</div>
@@ -68,6 +74,12 @@
         </main>
 
         <aside>
+            <!-- What's happening now -->
+            <div class="border-1 border-c-gray:+50 rounded-md pa-3 mt-2">
+                <h2 class="text-120 text-c-black text-w-bold">What's happening now</h2> {% for trend in trends %} {%
+                include "_trend.html" %} {% endfor %} <button class="text-c-tealblue text-90">More news</button>
+            </div>
+
             <!-- Who to follow -->
             <div class="mt-2 border-c-gray:+50 border-1 rounded-md pa-2" id="who_to_follow">
                 <h2 class="text-120 text-w-bold">Who to follow</h2>

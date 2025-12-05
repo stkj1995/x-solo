@@ -1,7 +1,6 @@
 <!-- POST ARTICLE -->
 <article class="post border-b border-gray-200 p-4 mb-4 
- bg-white shadow-sm" id="post_{{ tweet.post_pk }}"
-    data-user-pk="{{ tweet.post_user_fk }}" mix-fade-in="5000">
+ bg-white shadow-sm" id="post_{{ tweet.post_pk }}" data-user-pk="{{ tweet.post_user_fk }}" mix-fade-in="5000">
 
     {% set avatar = tweet.user_avatar_path %}
     <img src="{% if avatar %}
@@ -11,7 +10,7 @@
                     {{ url_for('static', filename='images/' + avatar) }}
                 {% endif %}
              {% else %}
-                {{ url_for('static', filename='images/avatar_1.jpg') }}
+                {{ url_for('static', filename='images/avatar.jpg') }}
              {% endif %}" alt="Profile" class="w-8 h-8 rounded-full">
 
     <div class="post-content">
