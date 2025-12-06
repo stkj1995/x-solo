@@ -1,10 +1,17 @@
-<h1>Admin Login</h1>
-<form method="POST">
-  <label for="admin_email">Email:</label>
-  <input id="admin_email" type="email" name="admin_email" placeholder="Enter email" required><br>
+{% extends "layout.html" %}
 
-  <label for="admin_password">Password:</label>
-  <input id="admin_password" type="password" name="admin_password" placeholder="Enter password" required><br>
+{% block content %}
+<div class="admin-login-container">
+  <h1>Admin Login</h1>
 
-  <button type="submit">Login</button>
-</form>
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('admin_login') }}" class="admin-login-form">
+    <input type="email" name="email" placeholder="Admin Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Login</button>
+  </form>
+</div>
+{% endblock %}

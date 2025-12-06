@@ -10,8 +10,6 @@
 </head>
 
 <body>
-
-
     <nav>
         <div class="one" onclick="toggle_menu()">
             <img alt="menu" src="{{ url_for('static', filename='images/menu.svg') }}">
@@ -85,6 +83,14 @@
             Bookmarks
         </a>
         <div class="bottom">
+            {% if session.get('admin') %}
+            <div class="mb-2 text-center">
+                <a href="{{ url_for('admin') }}"
+                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                    Admin Panel
+                </a>
+            </div>
+            {% endif %}
             <button>
                 Post
             </button>
@@ -112,20 +118,18 @@
         </div>
     </div>
 
-
-
     <div class="main_two">
         {% for i in range(10): %}
         {% include "_tweet.html" %}
         {% endfor %}
-
     </div>
 
     <div class="main_three">
         3
     </div>
-    
+
     <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 
 </body>
 

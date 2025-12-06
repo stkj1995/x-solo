@@ -39,7 +39,7 @@
                 <li><a href="/profile" mix-get mix-default="<i class='fa-regular fa-user'></i> Profile"
                         mix-await="Loading ..."><i class="fa-regular fa-user"></i> <span
                             class="pointer-e-none">Profile</span></a></li>
-                <li><a href="#"><i class="fa-solid fa-ellipsis"></i><span>More</span></a></li>
+                <li><a href="/admin-login"><i class="fa-solid fa-ellipsis"></i><span>Admin</span></a></li>
                 <li><a href="{{ url_for('logout') }}"><i
                             class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></li>
             </ul>
@@ -66,7 +66,14 @@
                 </div>
                 <i class="fa-solid fa-ellipsis option"></i>
             </div>
-
+            {% if session.get('admin') %}
+            <div class="mt-2 text-center">
+                <a href="{{ url_for('admin') }}"
+                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                    Admin Panel
+                </a>
+            </div>
+            {% endif %}
         </nav>
 
         <main id="feed" class="px-8">

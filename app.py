@@ -131,156 +131,157 @@ def admin_required(f):
 @x.no_cache
 def admin_login(lan="english"):
     try:
-        # --- Language handling ---
+        # Language handling
         if lan not in getattr(x, "allowed_languages", []):
             lan = "english"
         x.default_language = lan
 
-        # --- GET request ---
+        # GET: show login form
         if request.method == "GET":
             if session.get("admin"):
                 return redirect(url_for("admin"))
-            return render_template("admin_login.html", lan=lan)
+            return render_template("_admin_login.html", lan=lan)
 
-        # --- POST request ---
-        admin_email = request.form.get("admin_email", "").strip()
-        admin_password = request.form.get("admin_password", "").strip()
+        # POST: process login
+        admin_email = request.form.get("email", "").strip()
+        admin_password = request.form.get("password", "").strip()
 
         if not admin_email or not admin_password:
-            raise Exception("Missing email or password", 400)
+            return "Missing email or password", 400
 
         if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', admin_email):
-            raise Exception("Invalid email format", 400)
+            return "Invalid email format", 400
 
+        # Fetch admin from database
         db, cursor = x.db()
         cursor.execute("SELECT * FROM admin WHERE admin_email=%s", (admin_email,))
         admin = cursor.fetchone()
-        if not admin:
-            raise Exception("Admin not found", 400)
+        cursor.close()
+        db.close()
 
-        if not check_password_hash(admin.get("admin_password", ""), admin_password):
-            raise Exception("Invalid credentials", 400)
+        # Check password hash
+        if not admin or not check_password_hash(admin.get("admin_password", ""), admin_password):
+            return "Invalid credentials", 400
 
-        admin.pop("admin_password", None)
+        # Successful login
+        admin.pop("admin_password", None)  # remove password from session
         session["admin"] = admin
-        return """<browser mix-redirect="/admin"></browser>"""
+        return redirect(url_for("admin"))
 
     except Exception as ex:
         traceback.print_exc()
-        code = 400 if len(ex.args) > 1 and ex.args[1] == 400 else 500
-        msg = ex.args[0] if code == 400 else "System error, check logs"
-        toast_error = render_template("___toast_error.html", message=msg)
-        return f"""<browser mix-update="#toast">{toast_error}</browser>""", code
-
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+        return f"System error: {ex}", 500
 
 # ---------------------------
-# Admin panel
+# Admin dashboard
 # ---------------------------
-@app.get("/admin")
+@app.route("/admin")
 @x.no_cache
 @admin_required
 def admin():
     try:
+        admin_session = session.get("admin")
+        if not admin_session:
+            return redirect(url_for("admin_login"))
+
         db, cursor = x.db()
-        cursor.execute("SELECT user_pk, user_email, user_blocked FROM users ORDER BY user_pk")
+        # Fetch users (existing columns only)
+        cursor.execute("SELECT user_pk, user_email FROM users ORDER BY user_pk")
         users = cursor.fetchall()
 
+        # Fetch posts (existing columns only)
         cursor.execute("""
-            SELECT posts.post_pk, posts.user_fk, posts.post_blocked, users.user_email
+            SELECT posts.post_pk, posts.user_fk, users.user_email
             FROM posts
             JOIN users ON posts.user_fk = users.user_pk
             ORDER BY posts.post_pk
         """)
         posts = cursor.fetchall()
+        cursor.close()
+        db.close()
 
-        return render_template("admin.html", admin=session.get("admin"), users=users, posts=posts, languages=x.allowed_languages)
+        return render_template(
+            "admin.html",
+            admin=admin_session,
+            users=users,
+            posts=posts,
+            languages=getattr(x, "allowed_languages", [])
+        )
 
     except Exception as ex:
-        ic(ex)
-        return "System error", 500
-
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+        traceback.print_exc()
+        return f"System error: {ex}", 500
 
 # ---------------------------
 # Block/unblock user
 # ---------------------------
-@app.post("/admin/block_user/<user_pk>")
+@app.route("/admin/block_user/<user_pk>", methods=["POST"])
 @admin_required
 def block_user(user_pk):
     try:
-        try:
-            user_pk = str(uuid.UUID(user_pk))
-        except ValueError:
-            return "Invalid user ID", 400
+        user_pk = str(uuid.UUID(user_pk))
+    except ValueError:
+        return "Invalid user ID", 400
 
-        db, cursor = x.db()
-        cursor.execute("SELECT user_blocked, user_email FROM users WHERE user_pk=%s", (user_pk,))
-        row = cursor.fetchone()
-        if not row:
-            return "User not found", 404
+    db, cursor = x.db()
+    cursor.execute("SELECT user_blocked, user_email FROM users WHERE user_pk=%s", (user_pk,))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        db.close()
+        return "User not found", 404
 
-        new_status = 0 if row["user_blocked"] else 1
-        cursor.execute("UPDATE users SET user_blocked=%s WHERE user_pk=%s", (new_status, user_pk))
-        db.commit()
+    new_status = 0 if user["user_blocked"] else 1
+    cursor.execute("UPDATE users SET user_blocked=%s WHERE user_pk=%s", (new_status, user_pk))
+    db.commit()
+    cursor.close()
+    db.close()
 
-        subject = x.lans("account_status_updated")
-        status_text = "unblocked" if new_status == 0 else "blocked"
-        message = f"Your account has been {status_text} by the administrator."
-        x.send_email(row["user_email"], subject, message)
+    # Send notification email
+    status_text = "unblocked" if new_status == 0 else "blocked"
+    x.send_email(user["user_email"], x.lans("account_status_updated"), f"Your account has been {status_text} by the administrator.")
 
-        return redirect(url_for("admin"))
-
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+    return redirect(url_for("admin"))
 
 # ---------------------------
 # Block/unblock post
 # ---------------------------
-@app.post("/admin/block_post/<post_pk>")
+@app.route("/admin/block_post/<post_pk>", methods=["POST"])
 @admin_required
 def block_post(post_pk):
     try:
-        try:
-            post_pk = str(uuid.UUID(post_pk))
-        except ValueError:
-            return "Invalid post ID", 400
+        post_pk = str(uuid.UUID(post_pk))
+    except ValueError:
+        return "Invalid post ID", 400
 
-        db, cursor = x.db()
-        cursor.execute("""
-            SELECT post_blocked, users.user_email
-            FROM posts
-            JOIN users ON posts.user_fk = users.user_pk
-            WHERE post_pk=%s
-        """, (post_pk,))
-        row = cursor.fetchone()
-        if not row:
-            return "Post not found", 404
+    db, cursor = x.db()
+    cursor.execute("""
+        SELECT post_blocked, users.user_email
+        FROM posts
+        JOIN users ON posts.user_fk = users.user_pk
+        WHERE post_pk=%s
+    """, (post_pk,))
+    post = cursor.fetchone()
+    if not post:
+        cursor.close()
+        db.close()
+        return "Post not found", 404
 
-        new_status = 0 if row["post_blocked"] else 1
-        cursor.execute("UPDATE posts SET post_blocked=%s WHERE post_pk=%s", (new_status, post_pk))
-        db.commit()
+    new_status = 0 if post["post_blocked"] else 1
+    cursor.execute("UPDATE posts SET post_blocked=%s WHERE post_pk=%s", (new_status, post_pk))
+    db.commit()
+    cursor.close()
+    db.close()
 
-        subject = x.lans("post_status_updated")
-        status_text = "unblocked" if new_status == 0 else "blocked"
-        message = f"Your post has been {status_text} by the administrator."
-        x.send_email(row["user_email"], subject, message)
+    status_text = "unblocked" if new_status == 0 else "blocked"
+    x.send_email(post["user_email"], x.lans("post_status_updated"), f"Your post has been {status_text} by the administrator.")
 
-        return redirect(url_for("admin"))
-
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+    return redirect(url_for("admin"))
 
 # ---------------------------
 # Admin logout
 # ---------------------------
-@app.get("/admin_logout")
+@app.route("/admin_logout")
 def admin_logout():
     session.pop("admin", None)
     return redirect(url_for("admin_login"))
