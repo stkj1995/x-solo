@@ -743,14 +743,14 @@ def api_update_profile():
         if "db" in locals(): db.close()
 
 ###################################
-@app.route("/toggle-like-tweet", methods=["POST", "PATCH"])
+@app.route("/toggle-like-tweet", methods=["POST"])
 def toggle_like_tweet():
     try:
         user = session.get("user")
         post_pk = request.form.get("post_pk")
 
         if not user or not post_pk:
-            return f"<mixhtml><mix-message>Missing user or post</mix-message></mixhtml>", 400
+            return "<mixhtml><mix-message>Missing user or post</mix-message></mixhtml>", 400
 
         db, cursor = x.db()
 
@@ -767,12 +767,14 @@ def toggle_like_tweet():
                 "DELETE FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
                 (user, post_pk)
             )
+            liked_by_user = False
         else:
             # Like
             cursor.execute(
                 "INSERT INTO likes (like_pk, like_user_fk, like_post_fk, created_at) VALUES (UUID(), %s, %s, NOW())",
                 (user, post_pk)
             )
+            liked_by_user = True
 
         db.commit()
 
@@ -783,16 +785,17 @@ def toggle_like_tweet():
         )
         total = cursor.fetchone()["total"]
 
-        # Pick correct button template
-        new_button_html = render_template(
-            "__button_unlike_tweet.html" if not liked else "__button_like_tweet.html",
-            post_pk=post_pk,
-            post_total_likes=total
-        )
+        # Return updated button
+        new_button_html = f"""
+        <button class="action like-button" data-post-pk="{post_pk}">
+            <i class="{'fa-solid text-red-500' if liked_by_user else 'fa-regular'} fa-heart"></i>
+            <span class="post-likes">{total}</span>
+        </button>
+        """
 
         return f"""
         <mixhtml>
-            <mix-target query="[data-like-button='{post_pk}']">
+            <mix-target query="[data-post-pk='{post_pk}']">
                 {new_button_html}
             </mix-target>
         </mixhtml>
@@ -805,6 +808,7 @@ def toggle_like_tweet():
     finally:
         cursor.close()
         db.close()
+
 
 #############################       
 @app.route("/posts")

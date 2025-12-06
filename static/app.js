@@ -656,4 +656,37 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// ###############################document.addEventListener("DOMContentLoaded", () => {
+    document.body.addEventListener("click", async (e) => {
+        const likeButton = e.target.closest(".like-button");
+        if (!likeButton) return;
+
+        const postPk = likeButton.dataset.postPk;
+
+        try {
+            const formData = new FormData();
+            formData.append("post_pk", postPk);
+
+            const res = await fetch("/toggle-like-tweet", {
+                method: "POST",
+                body: formData
+            });
+
+            const html = await res.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const target = doc.querySelector("mix-target");
+
+            if (target) {
+                const query = target.getAttribute("query");
+                const el = document.querySelector(query);
+                if (el) el.outerHTML = target.innerHTML;
+            }
+        } catch (err) {
+            console.error("Error toggling like:", err);
+        }
+    });
 });
+
+

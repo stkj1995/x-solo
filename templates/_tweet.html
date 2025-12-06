@@ -47,52 +47,58 @@
                 data-post="{{ tweet.post_pk }}">
                 <i class="fa-regular fa-comment"></i> {{ tweet.comment_count or 0 }}
             </span>
+
             <span class="action space-x-1 hover:text-green-500"><i class="fa-solid fa-retweet"></i> 5</span>
 
-            {% if tweet.liked_by_user %}
-            {% include "___button_unlike_tweet.html" %}
-            {% else %}
-            {% include "___button_like_tweet.html" %}
-            {% endif %}
+            <!-- LIKE / UNLIKE BUTTON -->
+            <button class="action like-button" data-post-pk="{{ tweet.post_pk }}">
+                {% if tweet.liked_by_user %}
+                <i class="fa-solid fa-heart text-red-500"></i>
+                {% else %}
+                <i class="fa-regular fa-heart"></i>
+                {% endif %}
+                <span class="post-likes">{{ tweet.post_total_likes }}</span>
+            </button>
 
             <span class="action space-x-1 hover:text-purple-500"><i class="fa-solid fa-chart-simple"></i> 230</span>
             <span class="action space-x-1 hover:text-gray-700"><i class="fa-solid fa-share"></i></span>
-
-            {% if tweet.post_user_fk == user.user_pk %}
-            <button class="edit-post text-blue-500 hover:underline ml-2"
-                onclick="editPost('{{ tweet.post_pk }}', `{{ tweet.post_message|default('')|escape }}`)">Edit</button>
-            <button class="delete-post text-red-500 hover:underline ml-1"
-                onclick="deletePost('{{ tweet.post_pk }}')">Delete</button>
-            {% endif %}
         </div>
 
-        <!-- COMMENTS CONTAINER -->
-        <div class="comments-container mt-2 border-t border-gray-200 pt-2" id="comments_{{ tweet.post_pk }}">
-            <!-- COMMENT FORM -->
-            <form class="comment-form" data-post-pk="{{ tweet.post_pk }}">
-                <input type="hidden" name="post_fk" value="{{ tweet.post_pk }}">
-                <textarea name="comment" placeholder="Write a comment..." maxlength="250"></textarea>
-                <button type="submit"
-                    class="self-end bg-blue-500 text-white py-1 px-4 hover:bg-blue-600 transition">Comment</button>
-            </form>
+        {% if tweet.post_user_fk == user.user_pk %}
+        <button class="edit-post text-blue-500 hover:underline ml-2"
+            onclick="editPost('{{ tweet.post_pk }}', `{{ tweet.post_message|default('')|escape }}`)">Edit</button>
+        <button class="delete-post text-red-500 hover:underline ml-1"
+            onclick="deletePost('{{ tweet.post_pk }}')">Delete</button>
+        {% endif %}
+    </div>
 
-            <!-- EXISTING COMMENTS -->
-            <div class="comment-list">
-                {% for comment in tweet.comments %}
-                <div class="comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm"
-                    data-comment-pk="{{ comment.comment_pk }}">
-                    <strong>{{ comment.user_first_name }}:</strong> {{ comment.comment_message }}
-                    <span class="time text-gray-400">{{ comment.created_at }}</span>
+    <!-- COMMENTS CONTAINER -->
+    <div class="comments-container mt-2 border-t border-gray-200 pt-2" id="comments_{{ tweet.post_pk }}">
+        <!-- COMMENT FORM -->
+        <form class="comment-form" data-post-pk="{{ tweet.post_pk }}">
+            <input type="hidden" name="post_fk" value="{{ tweet.post_pk }}">
+            <textarea name="comment" placeholder="Write a comment..." maxlength="250"></textarea>
+            <button type="submit"
+                class="self-end bg-blue-500 text-white py-1 px-4 hover:bg-blue-600 transition">Comment</button>
+        </form>
 
-                    {% if comment.comment_user_fk == user.user_pk %}
-                    <button class="edit-comment text-blue-500 hover:underline"
-                        onclick="editComment('{{ comment.comment_pk }}', `{{ comment.comment_message|escape }}`)">Edit</button>
-                    <button class="delete-comment text-red-500 hover:underline"
-                        onclick="deleteComment('{{ comment.comment_pk }}')">Delete</button>
-                    {% endif %}
-                </div>
-                {% endfor %}
+        <!-- EXISTING COMMENTS -->
+        <div class="comment-list">
+            {% for comment in tweet.comments %}
+            <div class="comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm"
+                data-comment-pk="{{ comment.comment_pk }}">
+                <strong>{{ comment.user_first_name }}:</strong> {{ comment.comment_message }}
+                <span class="time text-gray-400">{{ comment.created_at }}</span>
+
+                {% if comment.comment_user_fk == user.user_pk %}
+                <button class="edit-comment text-blue-500 hover:underline"
+                    onclick="editComment('{{ comment.comment_pk }}', `{{ comment.comment_message|escape }}`)">Edit</button>
+                <button class="delete-comment text-red-500 hover:underline"
+                    onclick="deleteComment('{{ comment.comment_pk }}')">Delete</button>
+                {% endif %}
             </div>
+            {% endfor %}
         </div>
+    </div>
     </div>
 </article>
