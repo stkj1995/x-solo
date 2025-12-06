@@ -2,13 +2,12 @@
 
 {% block content %}
 <div class="admin-dashboard max-w-7xl mx-auto p-4 md:p-8">
-
-    <!-- Admin Header -->
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Admin Dashboard</h1>
         <p class="text-sm text-gray-700">Logged in as: <span class="font-semibold">{{ admin.admin_email }}</span></p>
-        <a href="{{ url_for('admin_logout') }}"
-            class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Logout</a>
+        <a href="{{ url_for('admin_logout') }}" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
+            Logout
+        </a>
     </div>
 
     <!-- Users Table -->
@@ -21,7 +20,6 @@
                         <th class="p-2 text-left">ID</th>
                         <th class="p-2 text-left">Email</th>
                         <th class="p-2 text-left">Blocked</th>
-                        <th class="p-2 text-left">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,14 +28,6 @@
                         <td class="p-2">{{ u.user_pk }}</td>
                         <td class="p-2">{{ u.user_email }}</td>
                         <td class="p-2">{{ 'Yes' if u.user_blocked else 'No' }}</td>
-                        <td class="p-2">
-                            <form action="{{ url_for('block_user', user_pk=u.user_pk) }}" method="post">
-                                <button type="submit"
-                                    class="px-3 py-1 rounded text-white bg-gray-800 hover:bg-gray-900">
-                                    {{ 'Unblock' if u.user_blocked else 'Block' }}
-                                </button>
-                            </form>
-                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -53,42 +43,23 @@
                 <thead class="bg-gray-200">
                     <tr>
                         <th class="p-2 text-left">ID</th>
-                        <th class="p-2 text-left">User</th>
+                        <th class="p-2 text-left">User Email</th>
+                        <th class="p-2 text-left">Message</th>
                         <th class="p-2 text-left">Blocked</th>
-                        <th class="p-2 text-left">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in posts %}
                     <tr class="border-b even:bg-gray-50">
                         <td class="p-2">{{ p.post_pk }}</td>
-                        <td class="p-2">{{ p.user_fk }}</td>
+                        <td class="p-2">{{ p.user_email or "Unknown" }}</td>
+                        <td class="p-2">{{ p.post_message }}</td>
                         <td class="p-2">{{ 'Yes' if p.post_blocked else 'No' }}</td>
-                        <td class="p-2">
-                            <form action="{{ url_for('block_post', post_pk=p.post_pk) }}" method="post">
-                                <button type="submit"
-                                    class="px-3 py-1 rounded text-white bg-gray-800 hover:bg-gray-900">
-                                    {{ 'Unblock' if p.post_blocked else 'Block' }}
-                                </button>
-                            </form>
-                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </section>
-
-    <!-- Languages -->
-    <section>
-        <h2 class="text-xl font-semibold mb-2">Languages</h2>
-        <ul class="list-disc pl-6">
-            <li>
-                {% for lang in languages %}
-                {{ lang }}
-                {% endfor %}
-            </li>
-        </ul>
     </section>
 </div>
 {% endblock %}

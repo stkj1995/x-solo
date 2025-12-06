@@ -66,14 +66,6 @@
                 </div>
                 <i class="fa-solid fa-ellipsis option"></i>
             </div>
-            {% if session.get('admin') %}
-            <div class="mt-2 text-center">
-                <a href="{{ url_for('admin') }}"
-                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
-                    Admin Panel
-                </a>
-            </div>
-            {% endif %}
         </nav>
 
         <main id="feed" class="px-8">

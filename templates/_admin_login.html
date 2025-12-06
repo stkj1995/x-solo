@@ -1,17 +1,17 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="admin-login-container">
-  <h1>Admin Login</h1>
-
+<div class="admin-login-container max-w-md mx-auto mt-20 p-6 bg-white shadow-md rounded">
+  <h1 class="text-2xl font-bold mb-4">Admin Login</h1>
   {% if error %}
-  <p class="error">{{ error }}</p>
+  <p class="text-red-500 mb-2">{{ error }}</p>
   {% endif %}
-
-  <form method="POST" action="{{ url_for('admin_login') }}" class="admin-login-form">
-    <input type="email" name="email" placeholder="Admin Email" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <button type="submit">Login</button>
+  <form method="POST" action="{{ url_for('admin_login') }}" class="space-y-4">
+    <input type="email" name="email" placeholder="Admin Email" required class="w-full p-2 border rounded">
+    <input type="password" name="password" placeholder="Password" required class="w-full p-2 border rounded">
+    <button type="submit" class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+      Login
+    </button>
   </form>
 </div>
 {% endblock %}

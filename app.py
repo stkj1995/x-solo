@@ -23,6 +23,7 @@ import base64
 import datetime
 import traceback
 from icecream import ic
+from functools import wraps
 
 ic.configureOutput(prefix='----- | ', includeContext=True)
 
@@ -68,16 +69,6 @@ def verify_scrypt_password(stored, provided):
     )
     return test_hash == stored_hash
 
-from functools import wraps
-
-def admin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get("admin"):
-            return redirect(url_for("admin_login"))
-        return f(*args, **kwargs)
-    return decorated
-
 # Folder for user-uploaded media
 UPLOAD_FOLDER = 'static/uploads'          # <-- your folder path
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'heic'}
@@ -113,7 +104,7 @@ def global_variables():
         x = x
     )
 # ---------------------------
-# Admin decorator
+# Admin required decorator
 # ---------------------------
 def admin_required(f):
     @wraps(f)
@@ -126,87 +117,65 @@ def admin_required(f):
 # ---------------------------
 # Admin login
 # ---------------------------
-@app.route("/admin_login", methods=["GET", "POST"])
-@app.route("/admin_login/<lan>", methods=["GET", "POST"])
-@x.no_cache
-def admin_login(lan="english"):
-    try:
-        # Language handling
-        if lan not in getattr(x, "allowed_languages", []):
-            lan = "english"
-        x.default_language = lan
+@app.route("/admin-login", methods=["GET", "POST"])
+def admin_login():
+    error = None
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
 
-        # GET: show login form
-        if request.method == "GET":
-            if session.get("admin"):
-                return redirect(url_for("admin"))
-            return render_template("_admin_login.html", lan=lan)
+        db, cursor = x.db()  # your database connection
+        try:
+            cursor.execute("SELECT * FROM admin WHERE admin_email=%s", (email,))
+            admin = cursor.fetchone()
 
-        # POST: process login
-        admin_email = request.form.get("email", "").strip()
-        admin_password = request.form.get("password", "").strip()
+            if not admin:
+                error = "Email not found"
+            elif not check_password_hash(admin["admin_password"], password):
+                error = "Incorrect password"
+            else:
+                # login successful
+                session["admin"] = admin
+                return redirect(url_for("admin"))  # replace with your admin page
 
-        if not admin_email or not admin_password:
-            return "Missing email or password", 400
+        finally:
+            cursor.close()
+            db.close()
 
-        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', admin_email):
-            return "Invalid email format", 400
-
-        # Fetch admin from database
-        db, cursor = x.db()
-        cursor.execute("SELECT * FROM admin WHERE admin_email=%s", (admin_email,))
-        admin = cursor.fetchone()
-        cursor.close()
-        db.close()
-
-        # Check password hash
-        if not admin or not check_password_hash(admin.get("admin_password", ""), admin_password):
-            return "Invalid credentials", 400
-
-        # Successful login
-        admin.pop("admin_password", None)  # remove password from session
-        session["admin"] = admin
-        return redirect(url_for("admin"))
-
-    except Exception as ex:
-        traceback.print_exc()
-        return f"System error: {ex}", 500
+    return render_template("_admin_login.html", error=error)
 
 # ---------------------------
 # Admin dashboard
 # ---------------------------
 @app.route("/admin")
-@x.no_cache
 @admin_required
 def admin():
     try:
         admin_session = session.get("admin")
-        if not admin_session:
-            return redirect(url_for("admin_login"))
 
         db, cursor = x.db()
-        # Fetch users (existing columns only)
-        cursor.execute("SELECT user_pk, user_email FROM users ORDER BY user_pk")
+
+        # USERS table
+        cursor.execute("SELECT user_pk, user_email, user_blocked FROM users ORDER BY user_pk")
         users = cursor.fetchall()
 
-        # Fetch posts (existing columns only)
+        # POSTS table (only existing columns)
         cursor.execute("""
-            SELECT posts.post_pk, posts.user_fk, users.user_email
+            SELECT posts.post_pk, posts.user_fk, posts.post_message, posts.post_blocked, users.user_email
             FROM posts
-            JOIN users ON posts.user_fk = users.user_pk
+            LEFT JOIN users ON posts.user_fk = users.user_pk
             ORDER BY posts.post_pk
         """)
         posts = cursor.fetchall()
+
         cursor.close()
         db.close()
 
-        return render_template(
-            "admin.html",
-            admin=admin_session,
-            users=users,
-            posts=posts,
-            languages=getattr(x, "allowed_languages", [])
-        )
+        return render_template("admin.html",
+                               admin=admin_session,
+                               users=users,
+                               posts=posts,
+                               languages=getattr(x, "allowed_languages", []))
 
     except Exception as ex:
         traceback.print_exc()
@@ -805,7 +774,7 @@ def toggle_like_tweet():
         cursor.close()
         db.close()
 
-#######################
+#############################       
 @app.route("/posts")
 def get_posts():
     """Fetch all posts with their comments"""
@@ -816,7 +785,7 @@ def get_posts():
         cursor.execute("""
             SELECT p.post_pk, p.post_message, p.post_image_path, p.post_user_fk,
                    p.post_total_likes, p.created_at,
-                   u.username
+                   u.user_username, u.user_first_name, u.user_last_name, u.user_avatar_path
             FROM posts p
             JOIN users u ON u.user_pk = p.post_user_fk
             ORDER BY p.created_at DESC
@@ -826,7 +795,9 @@ def get_posts():
         # Fetch comments for each post
         for post in posts:
             cursor.execute("""
-                SELECT c.comment_pk, c.comment_message, c.comment_user_fk, u.username, c.created_at
+                SELECT c.comment_pk, c.comment_message, c.comment_user_fk,
+                       u.user_username, u.user_first_name, u.user_last_name, u.user_avatar_path,
+                       c.created_at
                 FROM comments c
                 JOIN users u ON u.user_pk = c.comment_user_fk
                 WHERE c.comment_post_fk = %s
@@ -842,6 +813,7 @@ def get_posts():
     finally:
         cursor.close()
         db.close()
+
 
 ##############################
 @app.route("/api-create-post", methods=["POST"])
