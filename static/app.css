@@ -129,6 +129,13 @@ ul li a:hover {
   background-color: rgb(200, 200, 200);
 }
 
+ #txt_search_for {
+    position: relative; 
+    margin: 0.5rem;
+    background-color: #e0e9f0;
+  }
+
+
 /* ===============================
    POST BUTTON
    =============================== */
@@ -513,11 +520,11 @@ aside {
     width: 220px;
   }
 
-#txt_search_for {
-  position: relative; 
-  margin: 0.5rem;
-  background-color: #e0e9f0;
-}
+  #txt_search_for {
+    position: relative; 
+    margin: 0.5rem;
+    background-color: #e0e9f0;
+  }
 
   .x-landing {
     flex-direction: row;

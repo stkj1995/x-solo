@@ -1,26 +1,58 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify, flash
 from flask_session import Session
-from werkzeug.security import generate_password_hash
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from markupsafe import escape
+from itsdangerous import URLSafeTimedSerializer
+from oauth2client.service_account import ServiceAccountCredentials
+import gspread
+import requests
+import os
+import re
+import io
+import csv
+import json
+import time
 import uuid
+import random
+import hashlib
+import x
+import dictionary
+import base64
+import datetime
+import traceback
+from icecream import ic
+ic.configureOutput(prefix='----- | ', includeContext=True)
+app = Flask(__name__, static_folder="static")
+app.config["DEBUG"] = True
+app.secret_key = "SECRET_KEY"
+
+# Set maximum file upload size (10 MB)
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+
+# Session Configuration
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
+
+# Serializer for token generation
+s = URLSafeTimedSerializer(app.secret_key)
 user_verification_key = uuid.uuid4().hex
 verify_token = str(uuid.uuid4())
 
-from markupsafe import escape
-import re
-
-import hashlib
-import base64
-
 def verify_scrypt_password(stored, provided):
-    # stored example: scrypt:N:r:p$salt$hash
+    """
+    Verify a password stored with scrypt.
+    Stored format: scrypt:N:r:p$salt$hash
+    """
     parts = stored.split('$')
     if len(parts) != 3:
         return False
+
     params, salt_b64, hash_b64 = parts
     N, r, p = map(int, params.split(':')[1:])
     salt = base64.b64decode(salt_b64)
     stored_hash = base64.b64decode(hash_b64)
+
     test_hash = hashlib.scrypt(
         provided.encode(),
         salt=salt,
@@ -32,40 +64,15 @@ def verify_scrypt_password(stored, provided):
     )
     return test_hash == stored_hash
 
-from itsdangerous import URLSafeTimedSerializer
+from functools import wraps
 
-import random
-import gspread
-import requests
-import json
-import time
-import uuid
-import x 
-import dictionary
-import io
-import csv
-import traceback
-from werkzeug.utils import secure_filename
-import datetime
-
-from oauth2client.service_account import ServiceAccountCredentials
-
-from icecream import ic
-ic.configureOutput(prefix=f'----- | ', includeContext=True)
-
-app = Flask(__name__, static_folder="static")
-app.config["DEBUG"] = True
-app.secret_key = "SECRET_KEY"
-s = URLSafeTimedSerializer(app.secret_key)
-
-# Set the maximum file size to 10 MB
-app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024   # 1 MB
-
-app.config['SESSION_TYPE'] = 'filesystem'
-Session(app)
-
-import os
-from werkzeug.utils import secure_filename
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("admin"):
+            return redirect(url_for("admin_login"))
+        return f(*args, **kwargs)
+    return decorated
 
 # Folder for user-uploaded media
 UPLOAD_FOLDER = 'static/uploads'          # <-- your folder path
@@ -101,95 +108,82 @@ def global_variables():
         dictionary = dictionary,
         x = x
     )
+# ---------------------------
+# Admin decorator
+# ---------------------------
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("admin"):
+            return redirect(url_for("admin_login"))
+        return f(*args, **kwargs)
+    return decorated
 
-##############################
+# ---------------------------
+# Admin login
+# ---------------------------
 @app.route("/admin_login", methods=["GET", "POST"])
 @app.route("/admin_login/<lan>", methods=["GET", "POST"])
 @x.no_cache
 def admin_login(lan="english"):
-    import re
-    from markupsafe import escape
-    import traceback
-
-    # --- Language handling ---
-    if lan not in getattr(x, "allowed_languages", []):
-        lan = "english"
-    x.default_language = lan
-
-    # --- GET request ---
-    if request.method == "GET":
-        if session.get("admin"):
-            return redirect(url_for("admin"))
-        return render_template("admin_login.html", lan=lan)
-
-    # --- POST request ---
-    if request.method == "POST":
-        try:
-            print("Admin login POST received")
-
-            # --- Read and sanitize input ---
-            admin_email = escape(request.form.get("admin_email", "").strip())
-            admin_password = request.form.get("admin_password", "").strip()
-            print(f"Email: {admin_email}, Password length: {len(admin_password)}")
-
-            if not admin_email or not admin_password:
-                raise Exception("Missing email or password", 400)
-
-            # --- Validate email format ---
-            email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-            if not re.match(email_pattern, admin_email):
-                raise Exception("Invalid email format", 400)
-
-            # --- Connect to DB ---
-            print("Connecting to DB...")
-            db, cursor = x.db()
-            print("DB connected")
-
-            cursor.execute("SELECT * FROM admin WHERE admin_email=%s", (admin_email,))
-            admin = cursor.fetchone()
-            print("Admin fetched:", admin)
-
-            if not admin:
-                raise Exception("Admin not found", 400)
-
-            # --- Check password hash ---
-            if not check_password_hash(admin.get("admin_password", ""), admin_password):
-                raise Exception("Invalid credentials", 400)
-
-            # --- Remove password for session ---
-            admin.pop("admin_password", None)
-            session["admin"] = admin
-            print("Admin logged in successfully:", session["admin"])
-
-            return """<browser mix-redirect="/admin"></browser>"""
-
-        except Exception as ex:
-            traceback.print_exc()
-            code = 400 if len(ex.args) > 1 and ex.args[1] == 400 else 500
-            msg = ex.args[0] if code == 400 else "System error, check logs"
-            toast_error = render_template("___toast_error.html", message=msg)
-            return f"""<browser mix-update="#toast">{toast_error}</browser>""", code
-
-        finally:
-            if "cursor" in locals(): cursor.close()
-            if "db" in locals(): db.close()
-
-##############################
-@app.get("/admin")
-@x.no_cache
-def admin():
     try:
-        admin = session.get("admin")
-        if not admin:
-            return redirect(url_for("admin_login"))
+        # --- Language handling ---
+        if lan not in getattr(x, "allowed_languages", []):
+            lan = "english"
+        x.default_language = lan
+
+        # --- GET request ---
+        if request.method == "GET":
+            if session.get("admin"):
+                return redirect(url_for("admin"))
+            return render_template("admin_login.html", lan=lan)
+
+        # --- POST request ---
+        admin_email = request.form.get("admin_email", "").strip()
+        admin_password = request.form.get("admin_password", "").strip()
+
+        if not admin_email or not admin_password:
+            raise Exception("Missing email or password", 400)
+
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', admin_email):
+            raise Exception("Invalid email format", 400)
 
         db, cursor = x.db()
+        cursor.execute("SELECT * FROM admin WHERE admin_email=%s", (admin_email,))
+        admin = cursor.fetchone()
+        if not admin:
+            raise Exception("Admin not found", 400)
 
-        # Fetch users
+        if not check_password_hash(admin.get("admin_password", ""), admin_password):
+            raise Exception("Invalid credentials", 400)
+
+        admin.pop("admin_password", None)
+        session["admin"] = admin
+        return """<browser mix-redirect="/admin"></browser>"""
+
+    except Exception as ex:
+        traceback.print_exc()
+        code = 400 if len(ex.args) > 1 and ex.args[1] == 400 else 500
+        msg = ex.args[0] if code == 400 else "System error, check logs"
+        toast_error = render_template("___toast_error.html", message=msg)
+        return f"""<browser mix-update="#toast">{toast_error}</browser>""", code
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+# ---------------------------
+# Admin panel
+# ---------------------------
+@app.get("/admin")
+@x.no_cache
+@admin_required
+def admin():
+    try:
+        db, cursor = x.db()
         cursor.execute("SELECT user_pk, user_email, user_blocked FROM users ORDER BY user_pk")
         users = cursor.fetchall()
 
-        # Fetch posts
         cursor.execute("""
             SELECT posts.post_pk, posts.user_fk, posts.post_blocked, users.user_email
             FROM posts
@@ -198,9 +192,7 @@ def admin():
         """)
         posts = cursor.fetchall()
 
-        languages = x.allowed_languages
-
-        return render_template("admin.html", admin=admin, users=users, posts=posts, languages=languages)
+        return render_template("admin.html", admin=session.get("admin"), users=users, posts=posts, languages=x.allowed_languages)
 
     except Exception as ex:
         ic(ex)
@@ -210,16 +202,13 @@ def admin():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-#####################################
+# ---------------------------
+# Block/unblock user
+# ---------------------------
 @app.post("/admin/block_user/<user_pk>")
+@admin_required
 def block_user(user_pk):
     try:
-        admin = session.get("admin")
-        if not admin:
-            return redirect(url_for("admin_login"))
-
-        # Validate UUID
-        import uuid
         try:
             user_pk = str(uuid.UUID(user_pk))
         except ValueError:
@@ -235,7 +224,6 @@ def block_user(user_pk):
         cursor.execute("UPDATE users SET user_blocked=%s WHERE user_pk=%s", (new_status, user_pk))
         db.commit()
 
-        # Send email
         subject = x.lans("account_status_updated")
         status_text = "unblocked" if new_status == 0 else "blocked"
         message = f"Your account has been {status_text} by the administrator."
@@ -247,17 +235,13 @@ def block_user(user_pk):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
-###############################
+# ---------------------------
+# Block/unblock post
+# ---------------------------
 @app.post("/admin/block_post/<post_pk>")
+@admin_required
 def block_post(post_pk):
     try:
-        admin = session.get("admin")
-        if not admin:
-            return redirect(url_for("admin_login"))
-
-        # Validate UUID
-        import uuid
         try:
             post_pk = str(uuid.UUID(post_pk))
         except ValueError:
@@ -289,7 +273,9 @@ def block_post(post_pk):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-#############################
+# ---------------------------
+# Admin logout
+# ---------------------------
 @app.get("/admin_logout")
 def admin_logout():
     session.pop("admin", None)
