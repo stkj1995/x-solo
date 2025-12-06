@@ -153,17 +153,32 @@ def admin():
     try:
         admin_session = session.get("admin")
 
+        # Pagination parameters
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 20))
+        offset = (page - 1) * per_page
+
         db, cursor = x.db()
 
-        # USERS table
-        cursor.execute("SELECT user_pk, user_email, user_blocked FROM users ORDER BY user_pk")
+        # USERS table with pagination
+        cursor.execute("""
+            SELECT user_pk, user_email, user_blocked, user_first_name, user_last_name, user_role
+            FROM users
+            ORDER BY user_pk
+            LIMIT %s OFFSET %s
+        """, (per_page, offset))
         users = cursor.fetchall()
 
-        # POSTS table (only existing columns)
+        # Count total users for pagination
+        cursor.execute("SELECT COUNT(*) AS total FROM users")
+        total_users = cursor.fetchone()["total"]
+        total_pages = (total_users + per_page - 1) // per_page  # ceil division
+
+        # POSTS table
         cursor.execute("""
-            SELECT posts.post_pk, posts.user_fk, posts.post_message, posts.post_blocked, users.user_email
+            SELECT posts.post_pk, posts.post_user_fk, posts.post_message, posts.post_blocked, users.user_email
             FROM posts
-            LEFT JOIN users ON posts.user_fk = users.user_pk
+            LEFT JOIN users ON posts.post_user_fk = users.user_pk
             ORDER BY posts.post_pk
         """)
         posts = cursor.fetchall()
@@ -171,11 +186,16 @@ def admin():
         cursor.close()
         db.close()
 
-        return render_template("admin.html",
-                               admin=admin_session,
-                               users=users,
-                               posts=posts,
-                               languages=getattr(x, "allowed_languages", []))
+        return render_template(
+            "admin.html",
+            admin=admin_session,
+            users=users,
+            posts=posts,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            languages=getattr(x, "allowed_languages", [])
+        )
 
     except Exception as ex:
         traceback.print_exc()
@@ -188,27 +208,29 @@ def admin():
 @admin_required
 def block_user(user_pk):
     try:
-        user_pk = str(uuid.UUID(user_pk))
+        user_pk = str(uuid.UUID(user_pk))  # ensure valid UUID
     except ValueError:
         return "Invalid user ID", 400
 
-    db, cursor = x.db()
+    db, cursor = x.db()  # your function to get db connection
     cursor.execute("SELECT user_blocked, user_email FROM users WHERE user_pk=%s", (user_pk,))
     user = cursor.fetchone()
+
     if not user:
         cursor.close()
         db.close()
         return "User not found", 404
 
+    # Toggle blocked status
     new_status = 0 if user["user_blocked"] else 1
     cursor.execute("UPDATE users SET user_blocked=%s WHERE user_pk=%s", (new_status, user_pk))
     db.commit()
     cursor.close()
     db.close()
 
-    # Send notification email
+    # Optional: Send email notification
     status_text = "unblocked" if new_status == 0 else "blocked"
-    x.send_email(user["user_email"], x.lans("account_status_updated"), f"Your account has been {status_text} by the administrator.")
+    x.send_email(user["user_email"], "Account status updated", f"Your account has been {status_text} by the administrator.")
 
     return redirect(url_for("admin"))
 
@@ -227,10 +249,11 @@ def block_post(post_pk):
     cursor.execute("""
         SELECT post_blocked, users.user_email
         FROM posts
-        JOIN users ON posts.user_fk = users.user_pk
+        JOIN users ON posts.post_user_fk = users.user_pk
         WHERE post_pk=%s
     """, (post_pk,))
     post = cursor.fetchone()
+
     if not post:
         cursor.close()
         db.close()
@@ -243,9 +266,10 @@ def block_post(post_pk):
     db.close()
 
     status_text = "unblocked" if new_status == 0 else "blocked"
-    x.send_email(post["user_email"], x.lans("post_status_updated"), f"Your post has been {status_text} by the administrator.")
+    x.send_email(post["user_email"], "Post status updated", f"Your post has been {status_text} by the administrator.")
 
     return redirect(url_for("admin"))
+
 
 # ---------------------------
 # Admin logout
