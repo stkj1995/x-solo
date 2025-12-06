@@ -207,11 +207,6 @@ def admin():
 @app.route("/admin/block_user/<user_pk>", methods=["POST"])
 @admin_required
 def block_user(user_pk):
-    try:
-        user_pk = str(uuid.UUID(user_pk))  # ensure valid UUID
-    except ValueError:
-        return "Invalid user ID", 400
-
     db, cursor = x.db()  # your function to get db connection
     cursor.execute("SELECT user_blocked, user_email FROM users WHERE user_pk=%s", (user_pk,))
     user = cursor.fetchone()
@@ -228,7 +223,6 @@ def block_user(user_pk):
     cursor.close()
     db.close()
 
-    # Optional: Send email notification
     status_text = "unblocked" if new_status == 0 else "blocked"
     x.send_email(user["user_email"], "Account status updated", f"Your account has been {status_text} by the administrator.")
 
@@ -240,11 +234,6 @@ def block_user(user_pk):
 @app.route("/admin/block_post/<post_pk>", methods=["POST"])
 @admin_required
 def block_post(post_pk):
-    try:
-        post_pk = str(uuid.UUID(post_pk))
-    except ValueError:
-        return "Invalid post ID", 400
-
     db, cursor = x.db()
     cursor.execute("""
         SELECT post_blocked, users.user_email
@@ -269,7 +258,6 @@ def block_post(post_pk):
     x.send_email(post["user_email"], "Post status updated", f"Your post has been {status_text} by the administrator.")
 
     return redirect(url_for("admin"))
-
 
 # ---------------------------
 # Admin logout
