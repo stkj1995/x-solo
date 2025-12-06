@@ -7,6 +7,7 @@ from itsdangerous import URLSafeTimedSerializer
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 import requests
+
 import os
 import re
 import io
@@ -22,8 +23,11 @@ import base64
 import datetime
 import traceback
 from icecream import ic
+
 ic.configureOutput(prefix='----- | ', includeContext=True)
+
 app = Flask(__name__, static_folder="static")
+
 app.config["DEBUG"] = True
 app.secret_key = "SECRET_KEY"
 

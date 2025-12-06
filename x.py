@@ -1,22 +1,20 @@
 from flask import Flask, request, make_response, render_template
 import mysql.connector
-import re 
-import dictionary
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from icecream import ic
+
+import os
+import re
+import json
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
-import json
-import gspread
-import os
-import json
-from oauth2client.service_account import ServiceAccountCredentials
-from icecream import ic
+
 ic.configureOutput(prefix=f'----- | ', includeContext=True)
 
 app = Flask(__name__)
-
-import os
 
 # Base folder for user uploads (avatars and post images)
 UPLOAD_ITEM_FOLDER = os.path.join("static", "uploads")
@@ -26,7 +24,7 @@ os.makedirs(UPLOAD_ITEM_FOLDER, exist_ok=True)
 # Multilanguage / Google Sheets setup
 allowed_languages = ["english", "danish", "spanish"]
 default_language = "english"
-google_spread_sheet_key = "1TwU2j9Q32xUBA89Gb2iTeHdTAP7r3qAnoFZDUVtUmvo"  # placeholder
+google_spread_sheet_key = "1TwU2j9Q32xUBA89Gb2iTeHdTAP7r3qAnoFZDUVtUmvo"  # or placeholder
 
 # Mapping between database language_code and allowed_languages
 language_map = {
