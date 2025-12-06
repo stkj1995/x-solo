@@ -11,7 +11,7 @@
             <p class="text-sm text-gray-600">Logged in as: <span class="font-semibold text-gray-800">{{
                     admin.admin_email }}</span></p>
             <a href="{{ url_for('admin_logout') }}"
-                class="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 shadow transition">Logout</a>
+                class="px-4 py-2 rounded-full bg-black text-white hover:bg-red-700 shadow transition">Logout</a>
         </div>
     </div>
 
@@ -35,14 +35,14 @@
                         <td class="p-3 text-sm">{{ u.user_email }}</td>
                         <td class="p-3 text-sm">
                             <span
-                                class="px-2 py-1 text-xs rounded-full text-white {{ 'bg-green-600' if not u.user_blocked else 'bg-red-600' }}">
+                                class="px-2 py-1 text-xs rounded-full text-white {{ 'bg-blue-300' if not u.user_blocked else 'bg-red-600' }}">
                                 {{ 'No' if not u.user_blocked else 'Yes' }}
                             </span>
                         </td>
                         <td class="p-3 text-sm">
                             <form action="{{ url_for('block_user', user_pk=u.user_pk) }}" method="post">
                                 <button type="submit"
-                                    class="px-3 py-1 rounded-full text-white {{ 'bg-red-600 hover:bg-red-700' if not u.user_blocked else 'bg-green-600 hover:bg-green-700' }} shadow transition">
+                                    class="px-3 py-1 rounded-full text-white {{ 'bg-blue-600 hover:bg-blue-800' if not u.user_blocked else 'bg-green-600 hover:bg-green-700' }} shadow transition">
                                     {{ 'Block' if not u.user_blocked else 'Unblock' }}
                                 </button>
                             </form>
@@ -76,14 +76,14 @@
                         <td class="p-3 text-sm truncate max-w-xs">{{ p.post_message }}</td>
                         <td class="p-3 text-sm">
                             <span
-                                class="px-2 py-1 text-xs rounded-full text-white {{ 'bg-green-600' if not p.post_blocked else 'bg-red-600' }}">
+                                class="px-2 py-1 text-xs rounded-full text-white {{ 'bg-blue-300' if not p.post_blocked else 'bg-red-600' }}">
                                 {{ 'No' if not p.post_blocked else 'Yes' }}
                             </span>
                         </td>
                         <td class="p-3 text-sm">
                             <form action="{{ url_for('block_post', post_pk=p.post_pk) }}" method="post">
                                 <button type="submit"
-                                    class="px-3 py-1 rounded-full text-white {{ 'bg-red-600 hover:bg-red-700' if not p.post_blocked else 'bg-green-600 hover:bg-green-700' }} shadow transition">
+                                    class="px-3 py-1 rounded-full text-white {{ 'bg-blue-600 hover:bg-blue-800' if not p.post_blocked else 'bg-green-600 hover:bg-green-700' }} shadow transition">
                                     {{ 'Block' if not p.post_blocked else 'Unblock' }}
                                 </button>
                             </form>

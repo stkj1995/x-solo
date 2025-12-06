@@ -45,7 +45,15 @@
                             class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a></li>
             </ul>
 
-            <button class="post-btn">Post</button>
+            <!-- POST BUTTON -->
+            <div class="flex justify-center mb-2">
+                <button type="button"
+                    class="post-btn w-[90%] text-white bg-[#0f0f0f] font-bold text-base py-3 rounded-full 
+               transition-all duration-200 hover:bg-gray-100 hover:text-[#0f0f0f] hover:border hover:border-gray-300 text-center"
+                    onclick="document.getElementById('post_text').scrollIntoView({ behavior: 'smooth' }); document.getElementById('post_text').focus();">
+                    Post
+                </button>
+            </div>
 
             <div id="profile_tag">
                 {% set avatar_path = user.user_avatar_path or '' %}
