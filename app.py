@@ -147,36 +147,55 @@ def admin_login():
 # ---------------------------
 # Admin dashboard
 # ---------------------------
-@app.route("/admin")
+@app.route("/admin", defaults={'lan': None})
+@app.route("/admin/<lan>")
 @admin_required
-def admin():
+def admin(lan=None):
     try:
+        # --- Language handling ---
+        if lan not in x.allowed_languages:
+            lan = x.default_language  # fallback
+        session["admin_lang"] = lan  # store admin's selected language
+        x.default_language = lan     # ensure x.lans() uses it
+
         admin_session = session.get("admin")
 
-        # Pagination parameters
+        # Pagination
         page = int(request.args.get("page", 1))
         per_page = int(request.args.get("per_page", 20))
         offset = (page - 1) * per_page
 
         db, cursor = x.db()
 
-        # USERS table with pagination
+        # USERS TABLE + LANGUAGE
         cursor.execute("""
-            SELECT user_pk, user_email, user_blocked, user_first_name, user_last_name, user_role
+            SELECT 
+                user_pk, 
+                user_email, 
+                user_blocked, 
+                user_first_name, 
+                user_last_name, 
+                user_role,
+                user_language_fk
             FROM users
             ORDER BY user_pk
             LIMIT %s OFFSET %s
         """, (per_page, offset))
         users = cursor.fetchall()
 
-        # Count total users for pagination
+        # Total count
         cursor.execute("SELECT COUNT(*) AS total FROM users")
         total_users = cursor.fetchone()["total"]
-        total_pages = (total_users + per_page - 1) // per_page  # ceil division
+        total_pages = (total_users + per_page - 1) // per_page
 
-        # POSTS table
+        # POSTS TABLE
         cursor.execute("""
-            SELECT posts.post_pk, posts.post_user_fk, posts.post_message, posts.post_blocked, users.user_email
+            SELECT 
+                posts.post_pk, 
+                posts.post_user_fk, 
+                posts.post_message, 
+                posts.post_blocked, 
+                users.user_email
             FROM posts
             LEFT JOIN users ON posts.post_user_fk = users.user_pk
             ORDER BY posts.post_pk
@@ -194,7 +213,8 @@ def admin():
             page=page,
             per_page=per_page,
             total_pages=total_pages,
-            languages=getattr(x, "allowed_languages", [])
+            languages=x.allowed_languages,  # for flag selection
+            lan=lan
         )
 
     except Exception as ex:

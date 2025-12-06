@@ -6,26 +6,51 @@
 
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-4 md:mb-0">Admin Dashboard</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-4 md:mb-0">{{ x.lans("admin_dashboard", lan) }}</h1>
+
         <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4">
-            <p class="text-sm text-gray-600">Logged in as: <span class="font-semibold text-gray-800">{{
-                    admin.admin_email }}</span></p>
+
+            <p class="text-sm text-gray-600">
+                {{ x.lans("logged_in_as", lan) }}:
+                <span class="font-semibold text-gray-800">{{ admin.admin_email }}</span>
+            </p>
+
+            <!-- Language flags -->
+            <div class="flex items-center space-x-2 mt-1">
+                {% for lang in languages %}
+                {% if lang != lan %}
+                <!-- Clickable: reload /admin/<lang> -->
+                <a href="{{ url_for('admin', lan=lang) }}">
+                    <img src="{{ url_for('static', filename='images/flag_' + lang + '.png') }}" alt="{{ lang }} flag"
+                        class="w-5 h-5 rounded border hover:ring-2 hover:ring-gray-400 transition">
+                </a>
+                {% else %}
+                <!-- Active language: highlighted -->
+                <img src="{{ url_for('static', filename='images/flag_' + lang + '.png') }}" alt="{{ lang }} flag"
+                    class="w-5 h-5 rounded border-2 border-black">
+                {% endif %}
+                {% endfor %}
+            </div>
+
             <a href="{{ url_for('admin_logout') }}"
-                class="px-4 py-2 rounded-full bg-black text-white hover:bg-red-700 shadow transition">Logout</a>
+                class="px-4 py-2 rounded-full bg-black text-white hover:bg-red-700 shadow transition">
+                {{ x.lans("logout", lan) }}
+            </a>
+
         </div>
     </div>
 
     <!-- Users Table -->
     <section class="mb-10">
-        <h2 class="text-xl font-semibold mb-4 text-gray-800">Users</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">{{ x.lans("users", lan) }}</h2>
         <div class="overflow-x-auto bg-white shadow rounded-xl">
             <table class="w-full text-left table-auto border-collapse">
                 <thead class="bg-gray-100 border-b border-gray-200">
                     <tr>
-                        <th class="p-3 text-sm font-medium text-gray-700">ID</th>
-                        <th class="p-3 text-sm font-medium text-gray-700">Email</th>
-                        <th class="p-3 text-sm font-medium text-gray-700">Blocked</th>
-                        <th class="p-3 text-sm font-medium text-gray-700">Actions</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("id", lan) }}</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("email", lan) }}</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("blocked", lan) }}</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("actions", lan) }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -36,14 +61,14 @@
                         <td class="p-3 text-sm">
                             <span
                                 class="px-2 py-1 text-xs rounded-full text-white {{ 'bg-blue-300' if not u.user_blocked else 'bg-red-600' }}">
-                                {{ 'No' if not u.user_blocked else 'Yes' }}
+                                {{ x.lans("no", lan) if not u.user_blocked else x.lans("yes", lan) }}
                             </span>
                         </td>
                         <td class="p-3 text-sm">
                             <form action="{{ url_for('block_user', user_pk=u.user_pk) }}" method="post">
                                 <button type="submit"
                                     class="px-3 py-1 rounded-full text-white {{ 'bg-blue-600 hover:bg-blue-800' if not u.user_blocked else 'bg-green-600 hover:bg-green-700' }} shadow transition">
-                                    {{ 'Block' if not u.user_blocked else 'Unblock' }}
+                                    {{ x.lans("block", lan) if not u.user_blocked else x.lans("unblock", lan) }}
                                 </button>
                             </form>
                         </td>
@@ -56,35 +81,35 @@
 
     <!-- Posts Table -->
     <section class="mb-10">
-        <h2 class="text-xl font-semibold mb-4 text-gray-800">Posts</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">{{ x.lans("posts", lan) }}</h2>
         <div class="overflow-x-auto bg-white shadow rounded-xl">
             <table class="w-full text-left table-auto border-collapse">
                 <thead class="bg-gray-100 border-b border-gray-200">
                     <tr>
-                        <th class="p-3 text-sm font-medium text-gray-700">ID</th>
-                        <th class="p-3 text-sm font-medium text-gray-700">User Email</th>
-                        <th class="p-3 text-sm font-medium text-gray-700">Message</th>
-                        <th class="p-3 text-sm font-medium text-gray-700">Blocked</th>
-                        <th class="p-3 text-sm font-medium text-gray-700">Actions</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("id", lan) }}</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("user_email", lan) }}</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("message", lan) }}</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("blocked", lan) }}</th>
+                        <th class="p-3 text-sm font-medium text-gray-700">{{ x.lans("actions", lan) }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in posts %}
                     <tr class="border-b hover:bg-gray-50 transition">
                         <td class="p-3 text-sm">{{ p.post_pk }}</td>
-                        <td class="p-3 text-sm">{{ p.user_email or "Unknown" }}</td>
+                        <td class="p-3 text-sm">{{ p.user_email or x.lans("unknown", lan) }}</td>
                         <td class="p-3 text-sm truncate max-w-xs">{{ p.post_message }}</td>
                         <td class="p-3 text-sm">
                             <span
                                 class="px-2 py-1 text-xs rounded-full text-white {{ 'bg-blue-300' if not p.post_blocked else 'bg-red-600' }}">
-                                {{ 'No' if not p.post_blocked else 'Yes' }}
+                                {{ x.lans("no", lan) if not p.post_blocked else x.lans("yes", lan) }}
                             </span>
                         </td>
                         <td class="p-3 text-sm">
                             <form action="{{ url_for('block_post', post_pk=p.post_pk) }}" method="post">
                                 <button type="submit"
                                     class="px-3 py-1 rounded-full text-white {{ 'bg-blue-600 hover:bg-blue-800' if not p.post_blocked else 'bg-green-600 hover:bg-green-700' }} shadow transition">
-                                    {{ 'Block' if not p.post_blocked else 'Unblock' }}
+                                    {{ x.lans("block", lan) if not p.post_blocked else x.lans("unblock", lan) }}
                                 </button>
                             </form>
                         </td>

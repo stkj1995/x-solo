@@ -19,12 +19,13 @@ app = Flask(__name__)
 # Base folder for user uploads (avatars and post images)
 UPLOAD_ITEM_FOLDER = os.path.join("static", "uploads")
 os.makedirs(UPLOAD_ITEM_FOLDER, exist_ok=True)
-
 ##############################
 # Multilanguage / Google Sheets setup
-allowed_languages = ["english", "danish", "spanish"]
+##############################
+
+# Default and allowed languages
 default_language = "english"
-google_spread_sheet_key = "1TwU2j9Q32xUBA89Gb2iTeHdTAP7r3qAnoFZDUVtUmvo"  # or placeholder
+allowed_languages = ["english", "danish", "spanish"]
 
 # Mapping between database language_code and allowed_languages
 language_map = {
@@ -33,46 +34,51 @@ language_map = {
     'es': 'spanish'
 }
 
-# For exam / local testing: do not expose real service account
-# If you want to test without Google Sheets, just load a local dictionary
+# Google Sheet key
+google_spread_sheet_key = "1TwU2j9Q32xUBA89Gb2iTeHdTAP7r3qAnoFZDUVtUmvo"
+
+# Dictionary to hold translations
+dictionary = {}
+
 try:
     import gspread
     from oauth2client.service_account import ServiceAccountCredentials
 
-    # Authenticate with Google Sheets using the service account
+    # Authenticate with Google Sheets using service account
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
     client = gspread.authorize(creds)
 
-    # Open the sheet and fetch all rows
+    # Fetch all rows from the first sheet
     sheet = client.open_by_key(google_spread_sheet_key).sheet1
     rows = sheet.get_all_records()
-    
-    # Build the dictionary for translations
-    dictionary = {}
+
+    # Build dictionary from rows
     for row in rows:
         key = row['key']
-        dictionary[key] = {lang: row[lang] for lang in allowed_languages}
+        dictionary[key] = {lang: row.get(lang, key) for lang in allowed_languages}
 
 except Exception as e:
-    # Fallback to local dictionary.json for testing without real credentials
+    # Fallback to local JSON for testing without Google Sheets
     import json
     with open("dictionary.json", "r", encoding="utf-8") as f:
         dictionary = json.load(f)
 
+##############################
 # Function to get translation
-# def lans(key, lang=None):
-#     lang = lang if lang in allowed_languages else default_language
-#     return dictionary.get(key, {}).get(lang, key)
+##############################
 
-# Function to get translation using language code from DB
 def lans(key, db_lang_code=None):
     """
-    key: tekstnøgle fra dictionary
-    db_lang_code: sprogkode fra database ('en', 'da', 'es')
+    Returns translation for a key.
+    
+    key: string key from dictionary
+    db_lang_code: database language code ('en', 'da', 'es') or None
     """
-    # Map DB language code to allowed_languages, fallback to default_language
+    # Map db code to allowed_languages
     lang = language_map.get(db_lang_code, default_language)
+    if lang not in allowed_languages:
+        lang = default_language
     return dictionary.get(key, {}).get(lang, key)
 
 #####################################
