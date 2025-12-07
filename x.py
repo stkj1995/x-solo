@@ -97,6 +97,19 @@ def db():
         print(e, flush=True)
         raise Exception("Database under maintenance", 500)
 
+########################
+import mysql.connector
+
+def db():
+    db_conn = mysql.connector.connect(
+        host="teinvig.mysql.eu.pythonanywhere-services.com",
+        user="teinvig",
+        password="datapassword123",
+        database="teinvig$default"
+    )
+    cursor = db_conn.cursor(dictionary=True)
+    return db_conn, cursor
+
 ##############################
 def no_cache(view):
     @wraps(view)
