@@ -34,6 +34,11 @@ app.config["DEBUG"] = True
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
+# Routes test
+# @app.route("/")
+# def home():
+#     return "✅ Flask works!"
+
 Session(app)
 
 # Serializer for token generation
@@ -65,7 +70,6 @@ def _____USER_____(): pass
 
 @app.get("/")
 def view_index():
-   
     return render_template("index.html")
 
 ##############################
