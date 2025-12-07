@@ -1038,7 +1038,8 @@ def home():  # Function can keep the same name
     return "Hello Flask!"
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=True)
+
 
 # api-follow
 @app.route("/api-follow", methods=["POST"])
