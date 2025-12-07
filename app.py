@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify, flash
 from flask_session import Session
-from app import app as application
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from markupsafe import escape
@@ -27,76 +26,20 @@ from icecream import ic
 from functools import wraps
 # from dotenv import load_dotenv
 
-import sys
-import os
-
-# ====== Path setup ======
-# Add your project folder to the sys.path
-project_home = '/home/teinvig/x-solo'
-if project_home not in sys.path:
-    sys.path.insert(0, project_home)
-
-# ====== Virtual environment ======
-venv_path = os.path.join(project_home, 'venv')
-activate_this = os.path.join(venv_path, 'bin', 'activate_this.py')
-
-if os.path.exists(activate_this):
-    with open(activate_this) as file_:
-        exec(file_.read(), dict(__file__=activate_this))
-else:
-    raise FileNotFoundError(f"Virtual environment not found at {activate_this}")
-
-# ====== Import the Flask app ======
-from app import app as application
-
-# ====== Ensure dictionary.json uses absolute path ======
-import x
-x.DICTIONARY_PATH = os.path.join(project_home, 'dictionary.json')
-
-
 ic.configureOutput(prefix='----- | ', includeContext=True)
 
-app = Flask(__name__, static_folder="static")
-
+app = Flask(__name__, static_folder="static", template_folder="templates")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change_this_secret")
 app.config["DEBUG"] = True
-app.secret_key = "SECRET_KEY"
-
-# Set maximum file upload size (10 MB)
+app.config['SESSION_TYPE'] = 'filesystem'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
-# Session Configuration
-app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
 # Serializer for token generation
 s = URLSafeTimedSerializer(app.secret_key)
 user_verification_key = uuid.uuid4().hex
 verify_token = str(uuid.uuid4())
-
-def verify_scrypt_password(stored, provided):
-    """
-    Verify a password stored with scrypt.
-    Stored format: scrypt:N:r:p$salt$hash
-    """
-    parts = stored.split('$')
-    if len(parts) != 3:
-        return False
-
-    params, salt_b64, hash_b64 = parts
-    N, r, p = map(int, params.split(':')[1:])
-    salt = base64.b64decode(salt_b64)
-    stored_hash = base64.b64decode(hash_b64)
-
-    test_hash = hashlib.scrypt(
-        provided.encode(),
-        salt=salt,
-        n=N,
-        r=r,
-        p=p,
-        maxmem=0,
-        dklen=len(stored_hash)
-    )
-    return test_hash == stored_hash
 
 # Folder for user-uploaded media
 UPLOAD_FOLDER = 'static/uploads'          # <-- your folder path
@@ -132,6 +75,33 @@ def global_variables():
         dictionary = dictionary,
         x = x
     )
+
+##################################
+def verify_scrypt_password(stored, provided):
+    """
+    Verify a password stored with scrypt.
+    Stored format: scrypt:N:r:p$salt$hash
+    """
+    parts = stored.split('$')
+    if len(parts) != 3:
+        return False
+
+    params, salt_b64, hash_b64 = parts
+    N, r, p = map(int, params.split(':')[1:])
+    salt = base64.b64decode(salt_b64)
+    stored_hash = base64.b64decode(hash_b64)
+
+    test_hash = hashlib.scrypt(
+        provided.encode(),
+        salt=salt,
+        n=N,
+        r=r,
+        p=p,
+        maxmem=0,
+        dklen=len(stored_hash)
+    )
+    return test_hash == stored_hash
+
 # ---------------------------
 # Admin required decorator
 # ---------------------------

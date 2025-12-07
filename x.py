@@ -96,37 +96,40 @@ def lans(key, db_lang_code=None):
 #     except Exception as e:
 #         print(e, flush=True)
 #         raise Exception("Database under maintenance", 500)
-    
+    # ===== Database function =====
 import mysql.connector
+from icecream import ic
 import os
 
 def db():
+    """
+    Connect to MySQL database.
+    Automatically chooses local Docker or PythonAnywhere MySQL.
+    """
     try:
         if os.getenv("PYTHONANYWHERE") == "1":
             # PythonAnywhere MySQL
-            db = mysql.connector.connect(
+            db_conn = mysql.connector.connect(
                 host="teinvig.mysql.pythonanywhere-services.com",
                 port=3306,
                 user="teinvig",
-                password=os.getenv("DB_PASS"),  # set in Web → Environment Variables
+                password=os.getenv("DB_PASS"),  # Set in Web → Environment Variables
                 database="x"
             )
         else:
-            # Local Docker
-            db = mysql.connector.connect(
+            # Local Docker / development
+            db_conn = mysql.connector.connect(
                 host="mariadb",
                 port=3306,
                 user="root",
                 password="password",
                 database="x"
             )
-
-        cursor = db.cursor(dictionary=True)
-        return db, cursor
+        cursor = db_conn.cursor(dictionary=True)
+        return db_conn, cursor
     except Exception as e:
-        print(e, flush=True)
+        ic(e)
         raise Exception("Database under maintenance", 500)
-
 
 ##############################
 def no_cache(view):
