@@ -82,39 +82,51 @@ def lans(key, db_lang_code=None):
     return dictionary.get(key, {}).get(lang, key)
 
 #####################################
-def db():
-    try:
-        db = mysql.connector.connect(
-            host="mariadb",        # Docker Compose service name
-            port=3306,
-            user="root",
-            password="password",   # matches your docker-compose env
-            database="x"
-        )
-        cursor = db.cursor(dictionary=True)
-        return db, cursor
-    except Exception as e:
-        print(e, flush=True)
-        raise Exception("Database under maintenance", 500)
-    
-################################
-# import mysql.connector
-# import os
-
 # def db():
 #     try:
 #         db = mysql.connector.connect(
-#             host="teinvig.mysql.pythonanywhere-services.com", 
+#             host="mariadb",      
 #             port=3306,
-#             user="teinvig",                                    
-#             password=os.getenv("DB_PASS", "password"),     
-#             database="x"                                    
+#             user="root",
+#             password="password",   
+#             database="x"
 #         )
 #         cursor = db.cursor(dictionary=True)
 #         return db, cursor
 #     except Exception as e:
 #         print(e, flush=True)
 #         raise Exception("Database under maintenance", 500)
+    
+import mysql.connector
+import os
+
+def db():
+    try:
+        if os.getenv("PYTHONANYWHERE") == "1":
+            # PythonAnywhere MySQL
+            db = mysql.connector.connect(
+                host="teinvig.mysql.pythonanywhere-services.com",
+                port=3306,
+                user="teinvig",
+                password=os.getenv("DB_PASS"),  # set in Web → Environment Variables
+                database="x"
+            )
+        else:
+            # Local Docker
+            db = mysql.connector.connect(
+                host="mariadb",
+                port=3306,
+                user="root",
+                password="password",
+                database="x"
+            )
+
+        cursor = db.cursor(dictionary=True)
+        return db, cursor
+    except Exception as e:
+        print(e, flush=True)
+        raise Exception("Database under maintenance", 500)
+
 
 ##############################
 def no_cache(view):
