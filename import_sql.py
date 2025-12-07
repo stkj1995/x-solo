@@ -19,3 +19,4 @@ for statement in sql.split(";"):
 conn.commit()
 conn.close()
 print("SQL imported successfully!")
+
