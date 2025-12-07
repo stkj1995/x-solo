@@ -30,21 +30,29 @@ from functools import wraps
 import sys
 import os
 
-# Add your project folder to the Python path
+# ====== Path setup ======
+# Add your project folder to the sys.path
 project_home = '/home/teinvig/x-solo'
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
-# Set the virtualenv path
-virtualenv = '/home/teinvig/x-solo/venv'
-activate_this = os.path.join(virtualenv, 'bin', 'activate_this.py')
-# Only try to exec if it exists (modern venvs may not have this file)
-if os.path.exists(activate_this):
-    with open(activate_this) as f:
-        exec(f.read(), dict(__file__=activate_this))
+# ====== Virtual environment ======
+venv_path = os.path.join(project_home, 'venv')
+activate_this = os.path.join(venv_path, 'bin', 'activate_this.py')
 
-# Import your Flask app
+if os.path.exists(activate_this):
+    with open(activate_this) as file_:
+        exec(file_.read(), dict(__file__=activate_this))
+else:
+    raise FileNotFoundError(f"Virtual environment not found at {activate_this}")
+
+# ====== Import the Flask app ======
 from app import app as application
+
+# ====== Ensure dictionary.json uses absolute path ======
+import x
+x.DICTIONARY_PATH = os.path.join(project_home, 'dictionary.json')
+
 
 ic.configureOutput(prefix='----- | ', includeContext=True)
 
