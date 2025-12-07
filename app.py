@@ -26,6 +26,22 @@ from icecream import ic
 from functools import wraps
 # from dotenv import load_dotenv
 
+import sys
+import os
+
+# Add your project path
+project_home = '/home/teinvig/x-solo'
+if project_home not in sys.path:
+    sys.path = [project_home] + sys.path
+
+# Activate virtualenv
+activate_this = '/home/teinvig/x-solo/venv/bin/activate_this.py'
+with open(activate_this) as file_:
+    exec(file_.read(), dict(__file__=activate_this))
+
+# Import Flask app from your new main file
+from app import app as application
+
 ic.configureOutput(prefix='----- | ', includeContext=True)
 
 app = Flask(__name__, static_folder="static")
