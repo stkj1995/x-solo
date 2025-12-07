@@ -24,6 +24,7 @@ import datetime
 import traceback
 from icecream import ic
 from functools import wraps
+# from dotenv import load_dotenv
 
 ic.configureOutput(prefix='----- | ', includeContext=True)
 
@@ -743,60 +744,43 @@ def api_update_profile():
         if "db" in locals(): db.close()
 
 ###################################
-@app.route("/toggle-like-tweet", methods=["POST"])
+@app.route("/toggle-like-tweet", methods=["POST", "PATCH"])
 def toggle_like_tweet():
     try:
-        user = session.get("user")
+        user_pk = session.get("user")
         post_pk = request.form.get("post_pk")
 
-        if not user or not post_pk:
-            return "<mixhtml><mix-message>Missing user or post</mix-message></mixhtml>", 400
+        if not user_pk or not post_pk:
+            return f"<mixhtml><mix-message>Missing user or post</mix-message></mixhtml>", 400
 
         db, cursor = x.db()
 
-        # Check if user already liked the post
-        cursor.execute(
-            "SELECT * FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
-            (user, post_pk)
-        )
-        liked = cursor.fetchone()
+        # Check if already liked
+        cursor.execute("SELECT * FROM likes WHERE like_user_fk=%s AND like_post_fk=%s", (user_pk, post_pk))
+        liked = cursor.fetchone() is not None
 
         if liked:
             # Unlike
-            cursor.execute(
-                "DELETE FROM likes WHERE like_user_fk=%s AND like_post_fk=%s",
-                (user, post_pk)
-            )
-            liked_by_user = False
+            cursor.execute("DELETE FROM likes WHERE like_user_fk=%s AND like_post_fk=%s", (user_pk, post_pk))
+            liked = False
         else:
             # Like
-            cursor.execute(
-                "INSERT INTO likes (like_pk, like_user_fk, like_post_fk, created_at) VALUES (UUID(), %s, %s, NOW())",
-                (user, post_pk)
-            )
-            liked_by_user = True
+            cursor.execute("INSERT INTO likes (like_pk, like_user_fk, like_post_fk, created_at) VALUES (UUID(), %s, %s, NOW())", (user_pk, post_pk))
+            liked = True
 
         db.commit()
 
         # Count total likes
-        cursor.execute(
-            "SELECT COUNT(*) AS total FROM likes WHERE like_post_fk=%s",
-            (post_pk,)
-        )
+        cursor.execute("SELECT COUNT(*) AS total FROM likes WHERE like_post_fk=%s", (post_pk,))
         total = cursor.fetchone()["total"]
 
-        # Return updated button
-        new_button_html = f"""
-        <button class="action like-button" data-post-pk="{post_pk}">
-            <i class="{'fa-solid text-red-500' if liked_by_user else 'fa-regular'} fa-heart"></i>
-            <span class="post-likes">{total}</span>
-        </button>
-        """
+        # Render button template
+        button_html = render_template("_button_like_toggle.html", tweet={"post_pk": post_pk, "post_total_likes": total, "liked_by_user": liked})
 
         return f"""
         <mixhtml>
-            <mix-target query="[data-post-pk='{post_pk}']">
-                {new_button_html}
+            <mix-target query="[data-like-button='{post_pk}']">
+                {button_html}
             </mix-target>
         </mixhtml>
         """
@@ -808,48 +792,6 @@ def toggle_like_tweet():
     finally:
         cursor.close()
         db.close()
-
-
-#############################       
-@app.route("/posts")
-def get_posts():
-    """Fetch all posts with their comments"""
-    db, cursor = x.db()
-
-    try:
-        # Fetch posts with user info
-        cursor.execute("""
-            SELECT p.post_pk, p.post_message, p.post_image_path, p.post_user_fk,
-                   p.post_total_likes, p.created_at,
-                   u.user_username, u.user_first_name, u.user_last_name, u.user_avatar_path
-            FROM posts p
-            JOIN users u ON u.user_pk = p.post_user_fk
-            ORDER BY p.created_at DESC
-        """)
-        posts = cursor.fetchall()
-
-        # Fetch comments for each post
-        for post in posts:
-            cursor.execute("""
-                SELECT c.comment_pk, c.comment_message, c.comment_user_fk,
-                       u.user_username, u.user_first_name, u.user_last_name, u.user_avatar_path,
-                       c.created_at
-                FROM comments c
-                JOIN users u ON u.user_pk = c.comment_user_fk
-                WHERE c.comment_post_fk = %s
-                ORDER BY c.created_at ASC
-            """, (post["post_pk"],))
-            post["comments"] = cursor.fetchall()
-
-        return render_template("posts.html", posts=posts, session_user=session.get("user"))
-
-    except Exception as ex:
-        return f"Error fetching posts: {ex}", 500
-
-    finally:
-        cursor.close()
-        db.close()
-
 
 ##############################
 @app.route("/api-create-post", methods=["POST"])

@@ -1,0 +1,9 @@
+<button class="action like-button" mix-patch="/toggle-like-tweet" mix-body="post_pk={{ tweet.post_pk }}"
+    data-like-button="{{ tweet.post_pk }}">
+    {% if tweet.liked_by_user %}
+    <i class="fa-solid fa-heart text-red-500"></i>
+    {% else %}
+    <i class="fa-regular fa-heart"></i>
+    {% endif %}
+    <span class="post-likes">{{ tweet.post_total_likes }}</span>
+</button>

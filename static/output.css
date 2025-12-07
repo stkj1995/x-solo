@@ -797,6 +797,10 @@ video {
   max-width: 20rem;
 }
 
+.flex-1 {
+  flex: 1 1 0%;
+}
+
 .table-auto {
   table-layout: auto;
 }

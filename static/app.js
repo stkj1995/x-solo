@@ -272,7 +272,9 @@ function displayResults(data) {
 }
 
 // #############################
- document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
+
+  let editingCommentPk = null; // Tracks if we're editing a comment
 
   // ---------- Toggle comment form and focus textarea ----------
   document.querySelectorAll(".post .fa-comment").forEach(icon => {
@@ -281,10 +283,7 @@ function displayResults(data) {
       const form = postDiv.querySelector("form"); // picks the form inside this post
       if (!form) return;
 
-      // Toggle visibility (hidden class)
       form.classList.toggle("hidden");
-
-      // Focus textarea if form is visible
       const textarea = form.querySelector("textarea[name='comment']");
       if (!form.classList.contains("hidden") && textarea) {
         textarea.focus();
@@ -293,73 +292,146 @@ function displayResults(data) {
   });
 
   // ---------- Handle comment submission ----------
+ document.addEventListener("DOMContentLoaded", () => {
+
+  // ---------- Toggle comment form ----------
+  document.querySelectorAll(".post .fa-comment").forEach(icon => {
+    icon.addEventListener("click", e => {
+      const postDiv = e.target.closest(".post");
+      const form = postDiv.querySelector("form");
+      if (!form) return;
+
+      form.classList.toggle("hidden");
+      const textarea = form.querySelector("textarea[name='comment']");
+      if (!form.classList.contains("hidden") && textarea) textarea.focus();
+    });
+  });
+
+  // ---------- Handle new comment submission ----------
   document.querySelectorAll(".post form").forEach(form => {
     form.addEventListener("submit", async e => {
       e.preventDefault();
-
       const textarea = form.querySelector("textarea[name='comment']");
       if (!textarea) return;
 
       const commentText = textarea.value.trim();
+      if (!commentText) return;
 
-      // Validate input length
-      if (!commentText || commentText.length > 1000) {
-        alert("Comment must be 1-1000 characters.");
-        return;
-      }
-
-      // Extract post_pk from form action URL
-      const actionUrl = form.getAttribute("action"); // e.g., /api-create-comment/<post_pk>
-      const postFk = actionUrl.split("/").pop();
+      const postPk = form.dataset.postPk;
 
       try {
         const formData = new FormData();
-        formData.append("comment_text", commentText); // Flask expects this key
+        formData.append("comment_text", commentText);
 
-        const res = await fetch(`/api-create-comment/${postFk}`, {
+        const res = await fetch(`/api-create-comment/${postPk}`, {
           method: "POST",
           body: formData,
           credentials: "same-origin"
         });
 
         const data = await res.json();
-
         if (data.status === "ok") {
-          // Clear textarea
+          const commentsContainer = form.parentElement.querySelector(".comment-list");
+
+          const commentEl = document.createElement("div");
+          commentEl.className = "comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm mt-2";
+          commentEl.dataset.commentPk = data.comment_pk;
+          commentEl.innerHTML = `
+            <div class="comment-content flex-1">
+              <strong>${data.user_first_name} ${data.user_last_name}</strong>: 
+              <span class="comment-text">${commentText}</span>
+            </div>
+            <div class="comment-actions flex space-x-2 ml-2">
+              <span class="time text-gray-400">${data.created_at}</span>
+              <button class="edit-comment text-blue-500 hover:underline">Edit</button>
+              <button class="delete-comment text-red-500 hover:underline">Delete</button>
+            </div>
+          `;
+
+          commentsContainer.appendChild(commentEl);
           textarea.value = "";
 
-          // Append new comment under the post
-          const postDiv = form.closest(".post");
-          const commentsContainer = postDiv.querySelector(".post-content");
-          const commentEl = document.createElement("div");
-          commentEl.className = "comment mt-2 p-2 bg-gray-100 rounded";
-          commentEl.innerHTML = `<strong>${data.user_first_name || "You"} ${data.user_last_name || ""}</strong>: ${commentText}`;
-          commentsContainer.appendChild(commentEl);
-
-          // Optionally hide the form again
-          form.classList.add("hidden");
-        } else {
-          alert(data.message || "Failed to post comment.");
+          // Add inline edit and delete listeners for the new comment
+          addInlineEditDelete(commentEl);
         }
-
       } catch (err) {
-        console.error("Create comment error:", err);
-        alert("Could not post comment. Check console.");
+        console.error(err);
       }
     });
   });
 
-          // Trigger search on button click
-        const searchBtn = document.querySelector("#btn_search");
-        if (searchBtn) {
-            searchBtn.addEventListener("click", function(e) {
-                e.preventDefault();  // Prevent form submission if inside a form
-                doSearch();           // Trigger the same search function
+  // ---------- Initialize existing comments ----------
+  document.querySelectorAll(".comment").forEach(addInlineEditDelete);
+
+  function addInlineEditDelete(commentEl) {
+    const editBtn = commentEl.querySelector(".edit-comment");
+    const deleteBtn = commentEl.querySelector(".delete-comment");
+    const commentTextEl = commentEl.querySelector(".comment-text");
+
+    // Inline edit
+    editBtn.addEventListener("click", () => {
+      // Make content editable
+      commentTextEl.contentEditable = true;
+      commentTextEl.focus();
+      editBtn.textContent = "Save";
+
+      editBtn.onclick = async () => {
+        const updatedText = commentTextEl.textContent.trim();
+        if (!updatedText) return;
+
+        const commentPk = commentEl.dataset.commentPk;
+        try {
+          const formData = new FormData();
+          formData.append("comment_text", updatedText);
+
+          const res = await fetch(`/api-edit-comment/${commentPk}`, {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin"
+          });
+
+          const data = await res.json();
+          if (data.status === "ok") {
+            commentTextEl.textContent = updatedText;
+            commentTextEl.contentEditable = false;
+            editBtn.textContent = "Edit";
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+    });
+
+    // Delete
+    deleteBtn.addEventListener("click", async () => {
+      const commentPk = commentEl.dataset.commentPk;
+      if (!confirm("Delete this comment?")) return;
+
+      try {
+        const res = await fetch(`/api-delete-comment/${commentPk}`, {
+          method: "POST",
+          credentials: "same-origin"
         });
-}
-
-
+        const data = await res.json();
+        if (data.status === "ok") {
+          commentEl.remove();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
 });
+});
+
+  // Trigger search on button click
+const searchBtn = document.querySelector("#btn_search");
+if (searchBtn) {
+    searchBtn.addEventListener("click", function(e) {
+        e.preventDefault();  // Prevent form submission if inside a form
+        doSearch();           // Trigger the same search function
+});
+}
 
 // ##############################
 burger.addEventListener("click", () => {
@@ -656,37 +728,17 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// ###############################document.addEventListener("DOMContentLoaded", () => {
-    document.body.addEventListener("click", async (e) => {
-        const likeButton = e.target.closest(".like-button");
-        if (!likeButton) return;
+// ##############################
+document.addEventListener("DOMContentLoaded", () => {
+    document.body.addEventListener("click", (e) => {
+        const btn = e.target.closest("[mix-patch]");
+        if (!btn) return;
 
-        const postPk = likeButton.dataset.postPk;
-
-        try {
-            const formData = new FormData();
-            formData.append("post_pk", postPk);
-
-            const res = await fetch("/toggle-like-tweet", {
-                method: "POST",
-                body: formData
-            });
-
-            const html = await res.text();
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
-            const target = doc.querySelector("mix-target");
-
-            if (target) {
-                const query = target.getAttribute("query");
-                const el = document.querySelector(query);
-                if (el) el.outerHTML = target.innerHTML;
-            }
-        } catch (err) {
-            console.error("Error toggling like:", err);
-        }
+        // MixHTML handles the request automatically if you include its JS
+        // Nothing else is needed here for like/unlike
     });
+});
+
 });
 
 
