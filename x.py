@@ -97,6 +97,25 @@ def db():
         print(e, flush=True)
         raise Exception("Database under maintenance", 500)
     
+################################
+# import mysql.connector
+# import os
+
+# def db():
+#     try:
+#         db = mysql.connector.connect(
+#             host="teinvig.mysql.pythonanywhere-services.com", 
+#             port=3306,
+#             user="teinvig",                                    
+#             password=os.getenv("DB_PASS", "password"),     
+#             database="x"                                    
+#         )
+#         cursor = db.cursor(dictionary=True)
+#         return db, cursor
+#     except Exception as e:
+#         print(e, flush=True)
+#         raise Exception("Database under maintenance", 500)
+
 ##############################
 def no_cache(view):
     @wraps(view)
