@@ -1,3 +1,5 @@
+<script src="https://cdn.jsdelivr.net/npm/mixhtml@latest/dist/mixhtml.min.js"></script>
+
 {% include "_header.html" %}
 
 <main class="x-landing">
@@ -11,11 +13,8 @@
   </div>
 
   <div class="x-landing__right">
-
     <div class="x-dialog__content">
-
       <div class="d-flex gap-3">
-
         {% if lan != "english": %}
         <a href="/login/english">
           <img src="/static/images/flag_english.png" class="w-5" alt="enlish flag">
@@ -33,7 +32,6 @@
           <img src="/static/images/flag_spanish.png" class="w-5" alt="spanish flag">
         </a>
         {% endif %}
-
       </div>
 
       <h2 id="loginTitle">Log in to X</h2>
@@ -49,10 +47,7 @@
         <a href="{{ url_for('signup') }}">Sign up</a>
       </p>
     </div>
-
-
   </div>
-
 </main>
 
 {% include "_footer.html" %}
