@@ -24,7 +24,6 @@ import datetime
 import traceback
 from icecream import ic
 from functools import wraps
-# from dotenv import load_dotenv
 
 ic.configureOutput(prefix='----- | ', includeContext=True)
 
@@ -33,11 +32,6 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change_this_secret")
 app.config["DEBUG"] = True
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
-
-# Routes test
-@app.route("/")
-def home():
-    return "✅ Flask works!"
 
 Session(app)
 
@@ -1036,15 +1030,6 @@ def get_data_from_sheet():
     finally:
         pass
 
-# Example route
-@app.route("/", endpoint="home_page")
-def home():
-    return "Hello Flask!"
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-    
 # api-follow
 @app.route("/api-follow", methods=["POST"])
 def api_follow():
