@@ -12,6 +12,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
 
+from dotenv import load_dotenv
+import os
+
 ic.configureOutput(prefix=f'----- | ', includeContext=True)
 
 # Base folder for user uploads (avatars and post images)
@@ -85,19 +88,173 @@ def lans(key, db_lang_code=None):
     return dictionary.get(key, {}).get(lang, key)
 
 ####################################
+# def db():
+#     try:
+#         db = mysql.connector.connect(
+#             host="teinvig.mysql.eu.pythonanywhere-services.com",      
+#             user="teinvig",
+#             password="Datapassword123",   
+#             database="teinvig$x_solo"
+#         )
+#         cursor = db.cursor(dictionary=True)
+#         return db, cursor
+#     except Exception as e:
+#         print(e, flush=True)
+#         raise Exception("Database under maintenance", 500)
+
+# import socket
+
+# def db():
+#     try:
+     
+#         hostname = socket.gethostname()
+#         ip = socket.gethostbyname(hostname)
+
+        
+#         if ip.startswith("127.") or ip == "localhost":
+#             print("⚠ Running locally — skipping database connection")
+#             return None, None
+
+    
+#         db = mysql.connector.connect(
+#             host="teinvig.mysql.eu.pythonanywhere-services.com",
+#             user="teinvig",
+#             password="Datapassword123",
+#             database="teinvig$x_solo"
+#         )
+#         cursor = db.cursor(dictionary=True)
+#         return db, cursor
+
+#     except Exception as e:
+#         print(e, flush=True)
+#         raise Exception("Database under maintenance", 500)
+
+# import socket
+# import os
+# import mysql.connector
+
+
+# def is_local():
+#     try:
+#         ip = socket.gethostbyname(socket.gethostname())
+#         return ip.startswith("127.") or ip == "localhost"
+#     except:
+#         return True
+
+
+# def db():
+
+#     if is_local():
+#         print("⚠ LOCAL MODE → skipping MySQL connection")
+#         return None, None
+
+#     try:
+#         db = mysql.connector.connect(
+#             host="teinvig.mysql.eu.pythonanywhere-services.com",
+#             user="teinvig",
+#             password="Datapassword123",
+#             database="teinvig$x_solo"
+#         )
+#         cursor = db.cursor(dictionary=True)
+#         return db, cursor
+
+#     except Exception as e:
+#         print("DB ERROR:", e)
+#         raise Exception("Database under maintenance", 500)
+
+# def get_worksheet():
+#     if is_local():
+#         print("⚠ LOCAL MODE → skipping Google Sheets connection")
+#         return None
+
+#     try:
+#         import gspread
+#         from oauth2client.service_account import ServiceAccountCredentials
+
+#         scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/drive']
+#         creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+#         client = gspread.authorize(creds)
+#         return client.open("x-solo-database").sheet1
+#     except Exception as e:
+#         print("GOOGLE SHEETS ERROR:", e)
+#         return None
+
+
+# def db():
+#     try:
+#         if is_local():
+#             db = mysql.connector.connect(
+#                 host="mariadb",
+#                 user="root",
+#                 password="password",
+#                 database="x"
+#             )
+#         else:
+#             db = mysql.connector.connect(
+#                 host="teinvig.mysql.eu.pythonanywhere-services.com",
+#                 user="teinvig",
+#                 password="Datapassword123",
+#                 database="teinvig$x_solo"
+#             )
+
+#         cursor = db.cursor(dictionary=True)
+#         return db, cursor
+
+#     except Exception as e:
+#         print(e, flush=True)
+#         raise Exception("Database under maintenance", 500)
+
+
+import os
+from dotenv import load_dotenv
+import mysql.connector
+
+# Loader .env filen
+load_dotenv()
+
+def is_local():
+    """Tjekker om vi kører lokalt via FLASK_ENV"""
+    return os.environ.get("FLASK_ENV") == "local"
+
 def db():
+    """Returnerer en MySQL-forbindelse og cursor"""
     try:
-        db = mysql.connector.connect(
-            host="teinvig.mysql.eu.pythonanywhere-services.com",      
-            user="teinvig",
-            password="datapassword123",   
-            database="teinvig$x_solo"
-        )
+        if is_local():
+            print("⚠ LOCAL MODE → connecting to local Docker MariaDB")
+            db = mysql.connector.connect(
+                host=os.environ.get("MYSQL_HOST", "mariadb"),  # brug 'mariadb' som hostname
+                user=os.environ.get("MYSQL_USER", "root"),
+                password=os.environ.get("MYSQL_PASSWORD", "password"),
+                database=os.environ.get("MYSQL_DB", "x"),
+                port=int(os.environ.get("MYSQL_PORT", 3306))
+            )
+        else:
+            print("⚠ REMOTE MODE → connecting to PythonAnywhere MySQL")
+            db = mysql.connector.connect(
+                host="teinvig.mysql.eu.pythonanywhere-services.com",
+                user="teinvig",
+                password="Datapassword123",
+                database="teinvig$x_solo"
+            )
+
         cursor = db.cursor(dictionary=True)
         return db, cursor
+
     except Exception as e:
-        print(e, flush=True)
+        print("DB ERROR:", e, flush=True)
         raise Exception("Database under maintenance", 500)
+
+
+# Test forbindelsen, hvis scriptet køres direkte
+if __name__ == "__main__":
+    connection, cursor = db()
+    if connection:
+        print("✅ Database connected successfully")
+        cursor.close()
+        connection.close()
+    else:
+        print("⚠ Local mode → no connection needed")
+
 
 ##############################
 def no_cache(view):
