@@ -88,52 +88,16 @@ def lans(key, db_lang_code=None):
 def db():
     try:
         db = mysql.connector.connect(
-            host="mariadb",      
-            port=3306,
-            user="root",
-            password="password",   
-            database="x"
+            host="teinvig.mysql.eu.pythonanywhere-services.com",      
+            user="teinvig",
+            password="datapassword123",   
+            database="teinvig$x_solo"
         )
         cursor = db.cursor(dictionary=True)
         return db, cursor
     except Exception as e:
         print(e, flush=True)
         raise Exception("Database under maintenance", 500)
-
-#############################
-# x.py
-import mysql.connector
-import os
-
-def db():
-    """
-    Connect to MySQL database.
-    Automatically chooses:
-    - Local MySQL (for development)
-    - PythonAnywhere MySQL (for deployment)
-    """
-    
-    # Check if running on PythonAnywhere
-    if os.getenv("PYTHONANYWHERE") == "1":
-        # PythonAnywhere MySQL settings
-        db_conn = mysql.connector.connect(
-            host="teinvig.mysql.eu.pythonanywhere.com",  # correct host
-            user="teinvig",
-            password="datapassword123",
-            database="teinvig$x",
-            port=3306
-        )
-    else:
-        # Local development MySQL settings
-        db_conn = mysql.connector.connect(
-            host="localhost",
-            user="root",              # your local MySQL username
-            password="password",# your local MySQL password
-            database="x",
-            port=3306
-        )
-    
-    return db_conn
 
 ##############################
 def no_cache(view):
