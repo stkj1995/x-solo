@@ -59,7 +59,10 @@ try:
 except Exception as e:
     # Fallback to local JSON for testing without Google Sheets
     import json
-    with open("dictionary.json", "r", encoding="utf-8") as f:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DICT_PATH = os.path.join(BASE_DIR, "dictionary.json")
+    
+    with open(DICT_PATH, "r", encoding="utf-8") as f:
         dictionary = json.load(f)
 
 ##############################
