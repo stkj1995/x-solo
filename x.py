@@ -96,31 +96,49 @@ def db():
         raise Exception("Database under maintenance", 500)
 
 ########################
-import os
-import psycopg2
+# import os
+# import psycopg2
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://teinvig:g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l")
+# DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://teinvig:g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l")
 
-conn = psycopg2.connect(DATABASE_URL)
-cursor = conn.cursor()
+# conn = psycopg2.connect(DATABASE_URL)
+# cursor = conn.cursor()
 
 ###########################
-import psycopg2
+# import psycopg2
 
-conn = psycopg2.connect(
-    host="dpg-d4r94nur433s738k5or0-a",
-    port=5432,
-    database="x_1r8l",
-    user="teinvig",
-    password="g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V"
+# conn = psycopg2.connect(
+#     host="dpg-d4r94nur433s738k5or0-a",
+#     port=5432,
+#     database="x_1r8l",
+#     user="teinvig",
+#     password="g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V"
+# )
+
+# cur = conn.cursor()
+# cur.execute("SELECT version();")
+# print(cur.fetchone())
+
+# cur.close()
+# conn.close()
+
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+# Get database URL from environment variable (Render)
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://teinvig:g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l"
 )
 
-cur = conn.cursor()
-cur.execute("SELECT version();")
-print(cur.fetchone())
-
-cur.close()
-conn.close()
+try:
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=RealDictCursor)
+    cursor = conn.cursor()
+    print("✅ Connected to PostgreSQL successfully")
+except psycopg2.OperationalError as e:
+    print("❌ Failed to connect to PostgreSQL")
+    print(e)
 
 ##############################
 def no_cache(view):
