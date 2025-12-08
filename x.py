@@ -99,7 +99,7 @@ def db():
 import os
 import psycopg2
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgres://teinvig:<password>@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://teinvig:g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l")
 
 conn = psycopg2.connect(DATABASE_URL)
 cursor = conn.cursor()
