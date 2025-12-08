@@ -100,6 +100,7 @@ def db():
         raise Exception("Database under maintenance", 500)
 
 #############################
+import gspread
 import mysql.connector
 
 db_conn = mysql.connector.connect(
