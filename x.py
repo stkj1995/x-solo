@@ -104,10 +104,10 @@ import gspread
 import mysql.connector
 
 db_conn = mysql.connector.connect(
-    host="teinvig.mysql.pythonanywhere-services.com",
+    host="teinvig.mysql.pythonanywhere-services.com",  # check this exact spelling
     user="teinvig",
-    password="password",
-    database="teinvig$x_solo"  # DB name from PythonAnywhere
+    password="datapassword123",
+    database="teinvig$x_solo"
 )
 
 ##############################
