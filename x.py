@@ -17,6 +17,7 @@ ic.configureOutput(prefix=f'----- | ', includeContext=True)
 # Base folder for user uploads (avatars and post images)
 UPLOAD_ITEM_FOLDER = os.path.join("static", "uploads")
 os.makedirs(UPLOAD_ITEM_FOLDER, exist_ok=True)
+
 ##############################
 # Multilanguage / Google Sheets setup
 ##############################
@@ -84,54 +85,55 @@ def lans(key, db_lang_code=None):
     return dictionary.get(key, {}).get(lang, key)
 
 ####################################
-def db():
-    try:
-        db = mysql.connector.connect(
-            host="mariadb",      
-            port=3306,
-            user="root",
-            password="password",   
-            database="x"
-        )
-        cursor = db.cursor(dictionary=True)
-        return db, cursor
-    except Exception as e:
-        print(e, flush=True)
-        raise Exception("Database under maintenance", 500)
+# def db():
+#     try:
+#         db = mysql.connector.connect(
+#             host="mariadb",      
+#             port=3306,
+#             user="root",
+#             password="password",   
+#             database="x"
+#         )
+#         cursor = db.cursor(dictionary=True)
+#         return db, cursor
+#     except Exception as e:
+#         print(e, flush=True)
+#         raise Exception("Database under maintenance", 500)
 
 #############################
-# import gspread
-# import mysql.connector
-
-# db_conn = mysql.connector.connect(
-#     host="teinvig.mysql.pythonanywhere-services.com",  # check this exact spelling
-#     user="teinvig",
-#     password="datapassword123",
-#     database="teinvig$x_solo"
-# )
-
-import gspread
-import os
+# x.py
 import mysql.connector
+import os
 
-# Absolute path to dictionary.json
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DICT_PATH = os.path.join(BASE_DIR, "dictionary.json")
-
-# Read your dictionary file
-with open(DICT_PATH, "r", encoding="utf-8") as f:
-    dictionary = f.read()  # or json.load(f) if JSON
-
-# Database connection
-db_conn = mysql.connector.connect(
-    host="teinvig.mysql.pythonanywhere-services.com",  # check exact spelling
-    user="teinvig",
-    password="datapassword123",                       # your DB password
-    database="teinvig$x_solo"                          # your DB name
-)
-
-cursor = db_conn.cursor()
-
+def db():
+    """
+    Connect to MySQL database.
+    Automatically chooses:
+    - Local MySQL (for development)
+    - PythonAnywhere MySQL (for deployment)
+    """
+    
+    # Check if running on PythonAnywhere
+    if os.getenv("PYTHONANYWHERE") == "1":
+        # PythonAnywhere MySQL settings
+        db_conn = mysql.connector.connect(
+            host="teinvig.mysql.eu.pythonanywhere.com",  # correct host
+            user="teinvig",
+            password="datapassword123",
+            database="teinvig$x",
+            port=3306
+        )
+    else:
+        # Local development MySQL settings
+        db_conn = mysql.connector.connect(
+            host="localhost",
+            user="root",              # your local MySQL username
+            password="password",# your local MySQL password
+            database="x",
+            port=3306
+        )
+    
+    return db_conn
 
 ##############################
 def no_cache(view):
