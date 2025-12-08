@@ -550,98 +550,79 @@ def check_session():
     print("Session contents:", session)
 
 # HOME PAGE
-# @app.route("/home")
-# def home():
-#     user = session.get("user") 
-#     if not user:
-#         return redirect(url_for("login"))
-
-#     db, cursor = x.db()
-#     try:
-
-#         cursor.execute("""
-#             SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path, 
-#                    p.post_total_likes, p.created_at,
-#                    u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
-#             FROM posts p
-#             JOIN users u ON p.post_user_fk = u.user_pk
-#             ORDER BY p.created_at DESC
-#         """)
-#         tweets = cursor.fetchall()
-
-    
-#         for t in tweets:
-#             cursor.execute("""
-#                 SELECT c.comment_pk, c.comment_post_fk, c.comment_user_fk,
-#                        c.comment_message, c.created_at,
-#                        u.user_first_name, u.user_last_name
-#                 FROM comments c
-#                 JOIN users u ON u.user_pk = c.comment_user_fk
-#                 WHERE c.comment_post_fk = %s
-#                 ORDER BY c.created_at ASC
-#             """, (t["post_pk"],))
-#             t["comments"] = cursor.fetchall() or []
-#             t["comment_count"] = len(t["comments"])
-#             t["liked_by_user"] = False  
-
-       
-#         cursor.execute("""
-#             SELECT u.user_pk, u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
-#             FROM users u
-#             WHERE u.user_pk != %s
-#             ORDER BY RAND()
-#             LIMIT 5
-#         """, (user["user_pk"],))
-#         suggestions = cursor.fetchall()
-
-#         cursor.execute("""
-#             SELECT follow_target_fk
-#             FROM follows
-#             WHERE follow_user_fk = %s
-#         """, (user["user_pk"],))
-#         follows = cursor.fetchall() 
-
-
-#         cursor.execute("""
-#             SELECT trend_pk, trend_title, trend_message, trend_user_fk, trend_image, created_at
-#             FROM trends
-#             WHERE is_active = 1
-#             ORDER BY created_at DESC
-#             LIMIT 4
-#         """)
-#         trends = cursor.fetchall()
-
-#     finally:
-#         if "cursor" in locals(): cursor.close()
-#         if "db" in locals(): db.close()
-
-#     return render_template(
-#         "home.html",
-#         tweets=tweets,
-#         user=user,
-#         suggestions=suggestions,
-#         follows=follows,
-#         trends=trends  
-#     )
-
 @app.route("/home")
 def home():
+    user = session.get("user") 
+    if not user:
+        return redirect(url_for("login"))
+
+    db, cursor = x.db()
     try:
-        user = session.get("user")
-        if not user:
-            return redirect(url_for("login"))
 
-        db, cursor = x.db()
-        cursor.execute("SELECT * FROM users LIMIT 1")
-        users = cursor.fetchall()
-        cursor.close()
-        db.close()
-        return f"Users: {users}"
+        cursor.execute("""
+            SELECT p.post_pk, p.post_user_fk, p.post_message, p.post_image_path, 
+                   p.post_total_likes, p.created_at,
+                   u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
+            FROM posts p
+            JOIN users u ON p.post_user_fk = u.user_pk
+            ORDER BY p.created_at DESC
+        """)
+        tweets = cursor.fetchall()
 
-    except Exception as e:
-        traceback.print_exc()  # <-- shows full error
-        return f"Error: {e}", 500
+    
+        for t in tweets:
+            cursor.execute("""
+                SELECT c.comment_pk, c.comment_post_fk, c.comment_user_fk,
+                       c.comment_message, c.created_at,
+                       u.user_first_name, u.user_last_name
+                FROM comments c
+                JOIN users u ON u.user_pk = c.comment_user_fk
+                WHERE c.comment_post_fk = %s
+                ORDER BY c.created_at ASC
+            """, (t["post_pk"],))
+            t["comments"] = cursor.fetchall() or []
+            t["comment_count"] = len(t["comments"])
+            t["liked_by_user"] = False  
 
+       
+        cursor.execute("""
+            SELECT u.user_pk, u.user_first_name, u.user_last_name, u.user_username, u.user_avatar_path
+            FROM users u
+            WHERE u.user_pk != %s
+            ORDER BY RAND()
+            LIMIT 5
+        """, (user["user_pk"],))
+        suggestions = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT follow_target_fk
+            FROM follows
+            WHERE follow_user_fk = %s
+        """, (user["user_pk"],))
+        follows = cursor.fetchall() 
+
+
+        cursor.execute("""
+            SELECT trend_pk, trend_title, trend_message, trend_user_fk, trend_image, created_at
+            FROM trends
+            WHERE is_active = 1
+            ORDER BY created_at DESC
+            LIMIT 4
+        """)
+        trends = cursor.fetchall()
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+    return render_template(
+        "home.html",
+        tweets=tweets,
+        user=user,
+        suggestions=suggestions,
+        follows=follows,
+        trends=trends  
+    )
 
 # COMPONENT FOR AJAX UPDATES (feed only)
 @app.get("/home-comp")

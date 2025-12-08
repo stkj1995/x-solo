@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Vært: mariadb
--- Genereringstid: 08. 12 2025 kl. 08:37:07
+-- Genereringstid: 08. 12 2025 kl. 13:41:42
 -- Serverversion: 10.6.20-MariaDB-ubu2004
 -- PHP-version: 8.2.27
 

@@ -79,32 +79,32 @@ def lans(key, db_lang_code=None):
         lang = default_language
     return dictionary.get(key, {}).get(lang, key)
 
-#####################################
-# def db():
-#     try:
-#         db = mysql.connector.connect(
-#             host="mariadb",      
-#             port=3306,
-#             user="root",
-#             password="password",   
-#             database="x"
-#         )
-#         cursor = db.cursor(dictionary=True)
-#         return db, cursor
-#     except Exception as e:
-#         print(e, flush=True)
-#         raise Exception("Database under maintenance", 500)
-
+####################################
 def db():
-    db_conn = mysql.connector.connect(
-        host="mariadb",    # NOT 127.0.0.1
-        port=3306,         # NOT 3307 (that's host-mapped)
-        user="root",
-        password="password",
-        database="x"
-    )
-    cursor = db_conn.cursor(dictionary=True)
-    return db_conn, cursor
+    try:
+        db = mysql.connector.connect(
+            host="mariadb",      
+            port=3306,
+            user="root",
+            password="password",   
+            database="x"
+        )
+        cursor = db.cursor(dictionary=True)
+        return db, cursor
+    except Exception as e:
+        print(e, flush=True)
+        raise Exception("Database under maintenance", 500)
+
+# def db():
+#     db_conn = mysql.connector.connect(
+#         host="127.0.0.1",    # NOT 127.0.0.1
+#         port=3306,         # NOT 3307 (that's host-mapped)
+#         user="root",
+#         password="password",
+#         database="x"
+#     )
+#     cursor = db_conn.cursor(dictionary=True)
+#     return db_conn, cursor
 
 
 ##############################
