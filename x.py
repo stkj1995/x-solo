@@ -80,20 +80,20 @@ def lans(key, db_lang_code=None):
     return dictionary.get(key, {}).get(lang, key)
 
 #####################################
-# def db():
-#     try:
-#         db = mysql.connector.connect(
-#             host="mariadb",      
-#             port=3306,
-#             user="root",
-#             password="password",   
-#             database="x"
-#         )
-#         cursor = db.cursor(dictionary=True)
-#         return db, cursor
-#     except Exception as e:
-#         print(e, flush=True)
-#         raise Exception("Database under maintenance", 500)
+def db():
+    try:
+        db = mysql.connector.connect(
+            host="mariadb",      
+            port=3306,
+            user="root",
+            password="password",   
+            database="x"
+        )
+        cursor = db.cursor(dictionary=True)
+        return db, cursor
+    except Exception as e:
+        print(e, flush=True)
+        raise Exception("Database under maintenance", 500)
 
 ########################
 # import os
@@ -122,23 +122,23 @@ def lans(key, db_lang_code=None):
 # cur.close()
 # conn.close()
 
-import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
+# import os
+# import psycopg2
+# from psycopg2.extras import RealDictCursor
 
-# Get database URL from environment variable (Render)
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://teinvig:g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l"
-)
+# # Get database URL from environment variable (Render)
+# DATABASE_URL = os.getenv(
+#     "DATABASE_URL",
+#     "postgresql://teinvig:g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l"
+# )
 
-try:
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=RealDictCursor)
-    cursor = conn.cursor()
-    print("✅ Connected to PostgreSQL successfully")
-except psycopg2.OperationalError as e:
-    print("❌ Failed to connect to PostgreSQL")
-    print(e)
+# try:
+#     conn = psycopg2.connect(DATABASE_URL, sslmode='require', cursor_factory=RealDictCursor)
+#     cursor = conn.cursor()
+#     print("✅ Connected to PostgreSQL successfully")
+# except psycopg2.OperationalError as e:
+#     print("❌ Failed to connect to PostgreSQL")
+#     print(e)
 
 ##############################
 def no_cache(view):

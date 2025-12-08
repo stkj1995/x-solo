@@ -35,9 +35,9 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 # Routes test
-# @app.route("/")
-# def home():
-#     return "✅ Flask works!"
+@app.route("/")
+def home():
+    return "✅ Flask works!"
 
 Session(app)
 
