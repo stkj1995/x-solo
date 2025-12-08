@@ -96,17 +96,31 @@ def db():
         raise Exception("Database under maintenance", 500)
 
 ########################
-# import mysql.connector
+import os
+import psycopg2
 
-# def db():
-#     db_conn = mysql.connector.connect(
-#         host="teinvig.mysql.eu.pythonanywhere-services.com",
-#         user="teinvig",
-#         password="datapassword123",
-#         database="teinvig$default"
-#     )
-#     cursor = db_conn.cursor(dictionary=True)
-#     return db_conn, cursor
+DATABASE_URL = os.getenv("DATABASE_URL", "postgres://teinvig:<password>@dpg-d4r94nur433s738k5or0-a.frankfurt-postgres.render.com:5432/x_1r8l")
+
+conn = psycopg2.connect(DATABASE_URL)
+cursor = conn.cursor()
+
+###########################
+import psycopg2
+
+conn = psycopg2.connect(
+    host="dpg-d4r94nur433s738k5or0-a",
+    port=5432,
+    database="x_1r8l",
+    user="teinvig",
+    password="g9A7P9EHHldyMxRJZowYdP21Ce1mRp0V"
+)
+
+cur = conn.cursor()
+cur.execute("SELECT version();")
+print(cur.fetchone())
+
+cur.close()
+conn.close()
 
 ##############################
 def no_cache(view):
