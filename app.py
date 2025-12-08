@@ -1038,12 +1038,13 @@ def get_data_from_sheet():
 
 # Example route
 @app.route("/", endpoint="home_page")
-def home():  # Function can keep the same name
+def home():
     return "Hello Flask!"
 
 if __name__ == "__main__":
     app.run(debug=True)
 
+    
 # api-follow
 @app.route("/api-follow", methods=["POST"])
 def api_follow():
