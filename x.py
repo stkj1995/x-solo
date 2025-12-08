@@ -100,15 +100,38 @@ def db():
         raise Exception("Database under maintenance", 500)
 
 #############################
+# import gspread
+# import mysql.connector
+
+# db_conn = mysql.connector.connect(
+#     host="teinvig.mysql.pythonanywhere-services.com",  # check this exact spelling
+#     user="teinvig",
+#     password="datapassword123",
+#     database="teinvig$x_solo"
+# )
+
 import gspread
+import os
 import mysql.connector
 
+# Absolute path to dictionary.json
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DICT_PATH = os.path.join(BASE_DIR, "dictionary.json")
+
+# Read your dictionary file
+with open(DICT_PATH, "r", encoding="utf-8") as f:
+    dictionary = f.read()  # or json.load(f) if JSON
+
+# Database connection
 db_conn = mysql.connector.connect(
-    host="teinvig.mysql.pythonanywhere-services.com",  # check this exact spelling
+    host="teinvig.mysql.pythonanywhere-services.com",  # check exact spelling
     user="teinvig",
-    password="datapassword123",
-    database="teinvig$x_solo"
+    password="datapassword123",                       # your DB password
+    database="teinvig$x_solo"                          # your DB name
 )
+
+cursor = db_conn.cursor()
+
 
 ##############################
 def no_cache(view):
