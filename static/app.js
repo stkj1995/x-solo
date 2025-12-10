@@ -424,32 +424,32 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Delete comment
-    deleteBtn.addEventListener("click", async () => {
-      const commentPk = commentEl.dataset.commentPk;
-      if (!confirm("Delete this comment?")) return;
+    // Delete comment inline, no confirm, no page reload
+deleteBtn.addEventListener("click", async () => {
+  const commentPk = commentEl.dataset.commentPk;
 
-      try {
-        const formData = new FormData();
-        formData.append("comment_pk", commentPk);
+  try {
+    const formData = new FormData();
+    formData.append("comment_pk", commentPk);
 
-        const res = await fetch(`/api-delete-comment`, {
-          method: "POST",
-          body: formData,
-          credentials: "same-origin"
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          commentEl.remove();
-        }
-      } catch (err) {
-        console.error(err);
-      }
+    const res = await fetch(`/api-delete-comment`, {
+      method: "POST",
+      body: formData,
+      credentials: "same-origin"
     });
-  }
 
+    const data = await res.json();
+    if (data.success) {
+      // Remove comment from DOM immediately
+      commentEl.remove();
+    } else {
+      console.error("Failed to delete comment:", data.error);
+    }
+  } catch (err) {
+    console.error(err);
+  }
 });
+}
 
 
   // Trigger search on button click
@@ -768,6 +768,6 @@ document.addEventListener("click", async (e) => {
     }
 });
 
-
+});
 
 
