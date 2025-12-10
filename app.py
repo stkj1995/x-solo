@@ -1058,6 +1058,7 @@ def get_data_from_sheet():
         pass
 
 # api-follow
+# /api-follow
 @app.route("/api-follow", methods=["POST"])
 def api_follow():
     user = session.get("user")
@@ -1071,7 +1072,7 @@ def api_follow():
     try:
         db, cursor = x.db()
 
-        # Prevent duplicate follows
+        # Check for duplicate
         cursor.execute(
             "SELECT 1 FROM follows WHERE follow_user_fk=%s AND follow_target_fk=%s LIMIT 1",
             (user["user_pk"], following_pk)
@@ -1085,7 +1086,6 @@ def api_follow():
             (follow_pk, user["user_pk"], following_pk)
         )
         db.commit()
-
         return jsonify({"success": True})
 
     except Exception as e:
@@ -1095,7 +1095,8 @@ def api_follow():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-# api-unfollow
+
+# /api-unfollow
 @app.route("/api-unfollow", methods=["POST"])
 def api_unfollow():
     user = session.get("user")
@@ -1114,7 +1115,6 @@ def api_unfollow():
             (user["user_pk"], following_pk)
         )
         db.commit()
-
         return jsonify({"success": True})
 
     except Exception as e:
@@ -1123,6 +1123,7 @@ def api_unfollow():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
 
 # SOFT DELETE
 @app.post("/delete-user")

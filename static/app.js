@@ -683,62 +683,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ##############################
 document.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".follow-btn");
-  if (!btn) return;
+    const btn = e.target.closest(".follow-btn");
+    if (!btn) return;
 
-  const userPk = btn.dataset.user;
-  const action = btn.dataset.action;
+    const userPk = btn.dataset.user;
+    const action = btn.dataset.action;
 
-  // Optimistic UI toggle
-  if (action === "follow") {
-    btn.textContent = "Unfollow";
-    btn.classList.remove("bg-c-black");
-    btn.classList.add("bg-c-gray-500");
-    btn.dataset.action = "unfollow";
-  } else {
-    btn.textContent = "Follow";
-    btn.classList.remove("bg-c-gray-500");
-    btn.classList.add("bg-c-black");
-    btn.dataset.action = "follow";
-  }
-
-  try {
-    const res = await fetch(`/api-${action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `following_pk=${encodeURIComponent(userPk)}`
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-
-  } catch (err) {
-    console.error("Follow API error:", err);
-    // revert UI if API fails
+    // Optimistisk UI toggle
     if (action === "follow") {
-      btn.textContent = "Follow";
-      btn.classList.remove("bg-c-gray-500");
-      btn.classList.add("bg-c-black");
-      btn.dataset.action = "follow";
+        btn.textContent = "Unfollow";
+        btn.classList.remove("bg-c-black");
+        btn.classList.add("bg-c-gray-500");
+        btn.dataset.action = "unfollow";
     } else {
-      btn.textContent = "Unfollow";
-      btn.classList.remove("bg-c-black");
-      btn.classList.add("bg-c-gray-500");
-      btn.dataset.action = "unfollow";
+        btn.textContent = "Follow";
+        btn.classList.remove("bg-c-gray-500");
+        btn.classList.add("bg-c-black");
+        btn.dataset.action = "follow";
     }
-  }
+
+    try {
+        const res = await fetch(`/api-${action}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `following_pk=${encodeURIComponent(userPk)}`
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+    } catch (err) {
+        console.error("Follow API error:", err);
+        // Revert UI hvis API fejler
+        if (action === "follow") {
+            btn.textContent = "Follow";
+            btn.classList.remove("bg-c-gray-500");
+            btn.classList.add("bg-c-black");
+            btn.dataset.action = "follow";
+        } else {
+            btn.textContent = "Unfollow";
+            btn.classList.remove("bg-c-black");
+            btn.classList.add("bg-c-gray-500");
+            btn.dataset.action = "unfollow";
+        }
+    }
 });
 
-// ##############################
-document.addEventListener("DOMContentLoaded", () => {
-    document.body.addEventListener("click", (e) => {
-        const btn = e.target.closest("[mix-patch]");
-        if (!btn) return;
-
-        // MixHTML handles the request automatically if you include its JS
-        // Nothing else is needed here for like/unlike
-    });
 });
 
-});
 
 
