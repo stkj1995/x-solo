@@ -125,28 +125,6 @@ function cancelEdit(post_pk) {
     if (textEl) textEl.style.display = "block";
 }
 
-// ########################
-// DELETE POST
-// function deletePost(post_pk) {
-//     if (!confirm("Are you sure you want to delete this post?")) return;
-
-//     fetch(`/api-delete-post/${post_pk}`, {
-//         method: "POST",
-//         credentials: "same-origin"
-//     })
-//     .then(res => res.json())
-//     .then(data => {
-//         if (data.success) {
-//             const postDiv = document.getElementById(`post_${post_pk}`);
-//             if (postDiv) postDiv.remove();
-//         } else {
-//             alert("Failed to delete post: " + data.error);
-//         }
-//     })
-//     .catch(err => console.error("Delete post error:", err));
-// }
-document.addEventListener("DOMContentLoaded", () => {
-
   // ----------------------------
   // POST DELETE HANDLER
   // ----------------------------
@@ -179,7 +157,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-});
 
 // ##############################
 async function server(url, method, data_source_selector, function_after_fetch) {
@@ -451,7 +428,6 @@ deleteBtn.addEventListener("click", async () => {
 });
 }
 
-
   // Trigger search on button click
 const searchBtn = document.querySelector("#btn_search");
 if (searchBtn) {
@@ -719,7 +695,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 });
-
 
 // ##############################
 document.addEventListener("click", async (e) => {
