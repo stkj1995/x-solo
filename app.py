@@ -1354,4 +1354,3 @@ def api_delete_comment():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-

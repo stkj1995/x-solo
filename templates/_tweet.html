@@ -1,3 +1,5 @@
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
 <!-- POST ARTICLE -->
 <article class="post border-b border-gray-200 p-4 mb-4 bg-white shadow-sm" id="post_{{ tweet.post_pk }}"
     data-user-pk="{{ tweet.post_user_fk }}" mix-fade-in="5000">
@@ -73,7 +75,6 @@
 
         <!-- COMMENTS CONTAINER -->
         <div class="comments-container mt-2 border-t border-gray-200 pt-2" id="comments_{{ tweet.post_pk }}">
-
             <!-- COMMENT FORM -->
             <form class="comment-form flex flex-col" data-post-pk="{{ tweet.post_pk }}">
                 <input type="hidden" name="post_fk" value="{{ tweet.post_pk }}">
@@ -89,7 +90,7 @@
             <!-- COMMENT LIST -->
             <div class="comment-list mt-2">
                 {% for comment in tweet.comments %}
-                <div class="comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm mt-2"
+                <div class="comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm"
                     data-comment-pk="{{ comment.comment_pk }}">
                     <div class="comment-content flex-1">
                         <strong>{{ comment.user_first_name }}:</strong>
@@ -99,15 +100,15 @@
                         <span class="time text-gray-400">{{ comment.created_at }}</span>
 
                         {% if comment.comment_user_fk == user.user_pk %}
-                        <!-- INLINE EDIT BUTTON -->
-                        <button class="edit-comment text-blue-500 hover:underline">Edit</button>
-                        <button class="delete-comment text-red-500 hover:underline">Delete</button>
+                        <button class="edit-comment text-blue-500 hover:underline"
+                            onclick="startEditComment('{{ comment.comment_pk }}', `{{ comment.comment_message|escape }}`)">Edit</button>
+                        <button class="delete-comment text-red-500 hover:underline"
+                            onclick="deleteComment('{{ comment.comment_pk }}')">Delete</button>
                         {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
-
     </div>
 </article>

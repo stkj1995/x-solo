@@ -244,7 +244,7 @@ function displayResults(data) {
     container.classList.remove("d-none");
 }
 
-// #############################
+// #########################
 document.addEventListener("DOMContentLoaded", () => {
 
   let editingCommentPk = null; // Tracks if we're editing a comment
@@ -395,7 +395,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
 
   // Trigger search on button click
 const searchBtn = document.querySelector("#btn_search");
