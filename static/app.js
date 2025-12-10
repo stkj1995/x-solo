@@ -6,39 +6,34 @@ const burger = document.querySelector(".burger");
 const nav = document.querySelector("nav");
 
 /// ########################
+
+/// ########################
 // CREATE POST
 async function createPost(formId, postsContainerId) {
     const form = document.getElementById(formId);
     const container = document.getElementById(postsContainerId);
     const formData = new FormData(form);
-
     const res = await fetch("/api-create-post", {
         method: "POST",
         body: formData
     });
-
     const html = await res.text();
     container.insertAdjacentHTML("afterbegin", html);
     form.reset();
 }
-
 document.getElementById("post_container")?.addEventListener("submit", function(e){
     e.preventDefault();
     createPost("post_container", "posts");
 });
-
 // ########################
 // EDIT / SAVE / CANCEL
 function editPost(post_pk, currentText) {
     const postDiv = document.getElementById(`post_${post_pk}`);
     if (!postDiv) return;
-
     const content = postDiv.querySelector(".post-content");
     const textEl = postDiv.querySelector(".text");
-
     // Hide original text
     if (textEl) textEl.style.display = "none";
-
     // Create textarea if not already created
     let textarea = postDiv.querySelector(".edit-textarea");
     if (!textarea) {
@@ -48,35 +43,28 @@ function editPost(post_pk, currentText) {
         textarea.value = currentText || "";
         content.appendChild(textarea);
     }
-
     // Create Save + Cancel buttons if not already created
     let btnContainer = postDiv.querySelector(".edit-buttons");
     if (!btnContainer) {
         btnContainer = document.createElement("div");
         btnContainer.className = "edit-buttons flex gap-2 mt-2";
-
         btnContainer.innerHTML = `
             <button type="button" class="px-3 py-1 bg-blue-500 text-white rounded"
                 onclick="savePost('${post_pk}')">Save</button>
-
             <button type="button" class="px-3 py-1 bg-gray-300 text-black rounded"
                 onclick="cancelEdit('${post_pk}')">Cancel</button>
         `;
-
         content.appendChild(btnContainer);
     }
 }
-
 // ########################
 // SAVE POST
 async function savePost(post_pk) {
     const postDiv = document.getElementById(`post_${post_pk}`);
     const textarea = postDiv.querySelector(".edit-textarea");
     if (!textarea) return;
-
     const formData = new FormData();
     formData.append("post_message", textarea.value);
-
     try {
         const res = await fetch(`/api-update-post/${post_pk}`, {
             method: "POST",
@@ -84,25 +72,20 @@ async function savePost(post_pk) {
             credentials: "same-origin"
         });
         const data = await res.json();
-
         if (data.success) {
             // Find existing text element
             let textEl = postDiv.querySelector(".text");
-
             // If no text element existed (image-only post), create one
             if (!textEl) {
                 textEl = document.createElement("p");
                 textEl.className = "text mt-2";
-
                 // Insert it before the post actions
                 const actions = postDiv.querySelector(".post-actions");
                 postDiv.querySelector(".post-content").insertBefore(textEl, actions);
             }
-
             // Update text content and show it
             textEl.textContent = data.post_message;
             textEl.style.display = "block";
-
             // Cleanup edit UI
             textarea.remove();
             postDiv.querySelector(".edit-buttons")?.remove();
@@ -113,14 +96,12 @@ async function savePost(post_pk) {
         console.error("Save post error:", err);
     }
 }
-
 // ########################
 // CANCEL EDIT
 function cancelEdit(post_pk) {
     const postDiv = document.getElementById(`post_${post_pk}`);
     postDiv.querySelector(".edit-textarea")?.remove();
     postDiv.querySelector(".edit-buttons")?.remove();
-
     const textEl = postDiv.querySelector(".text");
     if (textEl) textEl.style.display = "block";
 }
@@ -131,19 +112,15 @@ function cancelEdit(post_pk) {
   document.body.addEventListener("click", async (e) => {
     // Check if clicked element is a delete-post button
     if (!e.target.matches(".delete-post")) return;
-
     const postBtn = e.target;
     const postDiv = postBtn.closest(".post");
     if (!postDiv) return;
-
     const postPk = postDiv.id.replace("post_", "");
-
     try {
       const res = await fetch(`/api-delete-post/${postPk}`, {
         method: "POST",
         credentials: "same-origin"
       });
-
       const data = await res.json();
       if (data.success) {
         // Remove post from DOM immediately
@@ -151,27 +128,11 @@ function cancelEdit(post_pk) {
       } else {
         console.error("Failed to delete post:", data.error);
       }
-
     } catch (err) {
       console.error("Delete post error:", err);
     }
   });
 
-
-// ##############################
-async function server(url, method, data_source_selector, function_after_fetch) {
-    let conn = null;
-    if (method.toUpperCase() === "POST") {
-        const data_source = document.querySelector(data_source_selector);
-        conn = await fetch(url, {
-            method: method,
-            body: new FormData(data_source)
-        });
-    }
-    if (!conn) return console.log("error connecting to the server");
-    const data_from_server = await conn.text();
-    window[function_after_fetch](data_from_server);
-}
 
 // ##############################
 // Trigger search on Enter key
@@ -286,7 +247,27 @@ function displayResults(data) {
 // #############################
 document.addEventListener("DOMContentLoaded", () => {
 
+  let editingCommentPk = null; // Tracks if we're editing a comment
+
   // ---------- Toggle comment form and focus textarea ----------
+  document.querySelectorAll(".post .fa-comment").forEach(icon => {
+    icon.addEventListener("click", e => {
+      const postDiv = e.target.closest(".post");
+      const form = postDiv.querySelector("form"); // picks the form inside this post
+      if (!form) return;
+
+      form.classList.toggle("hidden");
+      const textarea = form.querySelector("textarea[name='comment']");
+      if (!form.classList.contains("hidden") && textarea) {
+        textarea.focus();
+      }
+    });
+  });
+
+  // ---------- Handle comment submission ----------
+ document.addEventListener("DOMContentLoaded", () => {
+
+  // ---------- Toggle comment form ----------
   document.querySelectorAll(".post .fa-comment").forEach(icon => {
     icon.addEventListener("click", e => {
       const postDiv = e.target.closest(".post");
@@ -313,29 +294,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const formData = new FormData();
-        formData.append("comment", commentText);
-        formData.append("post_fk", postPk);
+        formData.append("comment_text", commentText);
 
-        const res = await fetch(`/api-create-comment`, {
+        const res = await fetch(`/api-create-comment/${postPk}`, {
           method: "POST",
           body: formData,
           credentials: "same-origin"
         });
 
         const data = await res.json();
-        if (data.success) {
+        if (data.status === "ok") {
           const commentsContainer = form.parentElement.querySelector(".comment-list");
 
           const commentEl = document.createElement("div");
           commentEl.className = "comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm mt-2";
-          commentEl.dataset.commentPk = data.comment.comment_pk;
+          commentEl.dataset.commentPk = data.comment_pk;
           commentEl.innerHTML = `
             <div class="comment-content flex-1">
-              <strong>${data.user_first_name || "You"}</strong>: 
+              <strong>${data.user_first_name} ${data.user_last_name}</strong>: 
               <span class="comment-text">${commentText}</span>
             </div>
             <div class="comment-actions flex space-x-2 ml-2">
-              <span class="time text-gray-400">${new Date().toLocaleString()}</span>
+              <span class="time text-gray-400">${data.created_at}</span>
               <button class="edit-comment text-blue-500 hover:underline">Edit</button>
               <button class="delete-comment text-red-500 hover:underline">Delete</button>
             </div>
@@ -344,6 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
           commentsContainer.appendChild(commentEl);
           textarea.value = "";
 
+          // Add inline edit and delete listeners for the new comment
           addInlineEditDelete(commentEl);
         }
       } catch (err) {
@@ -360,73 +341,61 @@ document.addEventListener("DOMContentLoaded", () => {
     const deleteBtn = commentEl.querySelector(".delete-comment");
     const commentTextEl = commentEl.querySelector(".comment-text");
 
-    let isEditing = false;
+    // Inline edit
+    editBtn.addEventListener("click", () => {
+      // Make content editable
+      commentTextEl.contentEditable = true;
+      commentTextEl.focus();
+      editBtn.textContent = "Save";
 
-    // Inline edit toggle
-    editBtn.addEventListener("click", async () => {
-      if (!isEditing) {
-        // Start editing
-        commentTextEl.contentEditable = true;
-        commentTextEl.focus();
-        editBtn.textContent = "Save";
-        isEditing = true;
-      } else {
-        // Save edited comment
+      editBtn.onclick = async () => {
         const updatedText = commentTextEl.textContent.trim();
         if (!updatedText) return;
 
         const commentPk = commentEl.dataset.commentPk;
-
         try {
           const formData = new FormData();
-          formData.append("comment_pk", commentPk);
-          formData.append("comment_message", updatedText);
+          formData.append("comment_text", updatedText);
 
-          const res = await fetch(`/api-edit-comment`, {
+          const res = await fetch(`/api-edit-comment/${commentPk}`, {
             method: "POST",
             body: formData,
             credentials: "same-origin"
           });
 
           const data = await res.json();
-          if (data.success) {
+          if (data.status === "ok") {
             commentTextEl.textContent = updatedText;
             commentTextEl.contentEditable = false;
             editBtn.textContent = "Edit";
-            isEditing = false;
           }
         } catch (err) {
           console.error(err);
         }
+      };
+    });
+
+    // Delete
+    deleteBtn.addEventListener("click", async () => {
+      const commentPk = commentEl.dataset.commentPk;
+      if (!confirm("Delete this comment?")) return;
+
+      try {
+        const res = await fetch(`/api-delete-comment/${commentPk}`, {
+          method: "POST",
+          credentials: "same-origin"
+        });
+        const data = await res.json();
+        if (data.status === "ok") {
+          commentEl.remove();
+        }
+      } catch (err) {
+        console.error(err);
       }
     });
-
-    // Delete comment inline, no confirm, no page reload
-deleteBtn.addEventListener("click", async () => {
-  const commentPk = commentEl.dataset.commentPk;
-
-  try {
-    const formData = new FormData();
-    formData.append("comment_pk", commentPk);
-
-    const res = await fetch(`/api-delete-comment`, {
-      method: "POST",
-      body: formData,
-      credentials: "same-origin"
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      // Remove comment from DOM immediately
-      commentEl.remove();
-    } else {
-      console.error("Failed to delete comment:", data.error);
-    }
-  } catch (err) {
-    console.error(err);
   }
 });
-}
+
 
   // Trigger search on button click
 const searchBtn = document.querySelector("#btn_search");
