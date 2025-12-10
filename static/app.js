@@ -274,27 +274,7 @@ function displayResults(data) {
 // #############################
 document.addEventListener("DOMContentLoaded", () => {
 
-  let editingCommentPk = null; // Tracks if we're editing a comment
-
   // ---------- Toggle comment form and focus textarea ----------
-  document.querySelectorAll(".post .fa-comment").forEach(icon => {
-    icon.addEventListener("click", e => {
-      const postDiv = e.target.closest(".post");
-      const form = postDiv.querySelector("form"); // picks the form inside this post
-      if (!form) return;
-
-      form.classList.toggle("hidden");
-      const textarea = form.querySelector("textarea[name='comment']");
-      if (!form.classList.contains("hidden") && textarea) {
-        textarea.focus();
-      }
-    });
-  });
-
-  // ---------- Handle comment submission ----------
- document.addEventListener("DOMContentLoaded", () => {
-
-  // ---------- Toggle comment form ----------
   document.querySelectorAll(".post .fa-comment").forEach(icon => {
     icon.addEventListener("click", e => {
       const postDiv = e.target.closest(".post");
@@ -321,28 +301,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const formData = new FormData();
-        formData.append("comment_text", commentText);
+        formData.append("comment", commentText);
+        formData.append("post_fk", postPk);
 
-        const res = await fetch(`/api-create-comment/${postPk}`, {
+        const res = await fetch(`/api-create-comment`, {
           method: "POST",
           body: formData,
           credentials: "same-origin"
         });
 
         const data = await res.json();
-        if (data.status === "ok") {
+        if (data.success) {
           const commentsContainer = form.parentElement.querySelector(".comment-list");
 
           const commentEl = document.createElement("div");
           commentEl.className = "comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm mt-2";
-          commentEl.dataset.commentPk = data.comment_pk;
+          commentEl.dataset.commentPk = data.comment.comment_pk;
           commentEl.innerHTML = `
             <div class="comment-content flex-1">
-              <strong>${data.user_first_name} ${data.user_last_name}</strong>: 
+              <strong>${data.user_first_name || "You"}</strong>: 
               <span class="comment-text">${commentText}</span>
             </div>
             <div class="comment-actions flex space-x-2 ml-2">
-              <span class="time text-gray-400">${data.created_at}</span>
+              <span class="time text-gray-400">${new Date().toLocaleString()}</span>
               <button class="edit-comment text-blue-500 hover:underline">Edit</button>
               <button class="delete-comment text-red-500 hover:underline">Delete</button>
             </div>
@@ -351,7 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
           commentsContainer.appendChild(commentEl);
           textarea.value = "";
 
-          // Add inline edit and delete listeners for the new comment
           addInlineEditDelete(commentEl);
         }
       } catch (err) {
@@ -368,52 +348,64 @@ document.addEventListener("DOMContentLoaded", () => {
     const deleteBtn = commentEl.querySelector(".delete-comment");
     const commentTextEl = commentEl.querySelector(".comment-text");
 
-    // Inline edit
-    editBtn.addEventListener("click", () => {
-      // Make content editable
-      commentTextEl.contentEditable = true;
-      commentTextEl.focus();
-      editBtn.textContent = "Save";
+    let isEditing = false;
 
-      editBtn.onclick = async () => {
+    // Inline edit toggle
+    editBtn.addEventListener("click", async () => {
+      if (!isEditing) {
+        // Start editing
+        commentTextEl.contentEditable = true;
+        commentTextEl.focus();
+        editBtn.textContent = "Save";
+        isEditing = true;
+      } else {
+        // Save edited comment
         const updatedText = commentTextEl.textContent.trim();
         if (!updatedText) return;
 
         const commentPk = commentEl.dataset.commentPk;
+
         try {
           const formData = new FormData();
-          formData.append("comment_text", updatedText);
+          formData.append("comment_pk", commentPk);
+          formData.append("comment_message", updatedText);
 
-          const res = await fetch(`/api-edit-comment/${commentPk}`, {
+          const res = await fetch(`/api-edit-comment`, {
             method: "POST",
             body: formData,
             credentials: "same-origin"
           });
 
           const data = await res.json();
-          if (data.status === "ok") {
+          if (data.success) {
             commentTextEl.textContent = updatedText;
             commentTextEl.contentEditable = false;
             editBtn.textContent = "Edit";
+            isEditing = false;
           }
         } catch (err) {
           console.error(err);
         }
-      };
+      }
     });
 
-    // Delete
+    // Delete comment
     deleteBtn.addEventListener("click", async () => {
       const commentPk = commentEl.dataset.commentPk;
       if (!confirm("Delete this comment?")) return;
 
       try {
-        const res = await fetch(`/api-delete-comment/${commentPk}`, {
+        const formData = new FormData();
+        formData.append("comment_pk", commentPk);
+
+        const res = await fetch(`/api-delete-comment`, {
           method: "POST",
+          body: formData,
           credentials: "same-origin"
         });
+
         const data = await res.json();
-        if (data.status === "ok") {
+        if (data.success) {
           commentEl.remove();
         }
       } catch (err) {
@@ -421,8 +413,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
 });
-});
+
 
   // Trigger search on button click
 const searchBtn = document.querySelector("#btn_search");
@@ -490,12 +483,16 @@ document.addEventListener("DOMContentLoaded", () => {
         // Append comment locally with Edit/Delete buttons
         const list = document.querySelector(`#comments_${postPk} .comment-list`);
         const commentEl = document.createElement("div");
-        commentEl.classList.add("comment");
+        commentEl.classList.add("comment", "p-2", "bg-gray-50", "flex", "justify-between", "items-start", "border", "border-gray-100", "shadow-sm", "mt-2");
         commentEl.dataset.commentPk = data.comment.comment_pk;
         commentEl.innerHTML = `
-          <strong>You:</strong> ${data.comment.comment_message}
-          <button class="edit-comment">Edit</button>
-          <button class="delete-comment">Delete</button>
+          <div class="comment-content flex-1">
+            <strong>You:</strong> <span class="comment-text">${data.comment.comment_message}</span>
+          </div>
+          <div class="comment-actions flex space-x-2 ml-2">
+            <button class="edit-comment text-blue-500 hover:underline">Edit</button>
+            <button class="delete-comment text-red-500 hover:underline">Delete</button>
+          </div>
         `;
         list.appendChild(commentEl);
 
@@ -508,9 +505,6 @@ document.addEventListener("DOMContentLoaded", () => {
           let currentCount = parseInt(toggleBtn.textContent.trim()) || 0;
           toggleBtn.innerHTML = `<i class="fa-regular fa-comment"></i> ${currentCount + 1}`;
         }
-
-        // REMOVE scrollIntoView so page doesn't jump
-        // commentEl.scrollIntoView({ behavior: "smooth" });
 
       } else {
         alert(data.error || "Failed to post comment");
@@ -533,28 +527,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const postContainer = commentEl.closest(".post");
     const postPk = postContainer?.id.replace("post_", "");
 
-    // EDIT COMMENT
+    // EDIT COMMENT INLINE
     if (e.target.matches(".edit-comment")) {
-      const currentText = commentEl.querySelector("strong")?.nextSibling?.textContent?.trim() || "";
-      const newText = prompt("Edit your comment:", currentText);
-      if (!newText || newText.trim() === "" || newText === currentText) return;
+      const editBtn = e.target;
+      const commentTextEl = commentEl.querySelector(".comment-text");
 
-      try {
-        const res = await fetch("/api-edit-comment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ comment_pk: commentPk, comment_message: newText })
-        });
-        const data = await res.json();
-        if (data.success) {
-          // Replace comment text in place without reloading
-          commentEl.querySelector("strong").nextSibling.textContent = ` ${newText} `;
-        } else {
-          alert(data.error || "Failed to edit comment");
+      if (!commentTextEl.isContentEditable) {
+        // Start editing
+        commentTextEl.contentEditable = true;
+        commentTextEl.focus();
+        editBtn.textContent = "Save";
+      } else {
+        // Save edited comment
+        const newText = commentTextEl.textContent.trim();
+        if (!newText) return;
+
+        try {
+          const res = await fetch("/api-edit-comment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ comment_pk: commentPk, comment_message: newText })
+          });
+          const data = await res.json();
+          if (data.success) {
+            commentTextEl.contentEditable = false;
+            editBtn.textContent = "Edit";
+          } else {
+            console.error(data.error || "Failed to edit comment");
+          }
+        } catch (err) {
+          console.error(err);
         }
-      } catch (err) {
-        console.error(err);
-        alert("Error editing comment");
       }
     }
 
@@ -579,14 +582,16 @@ document.addEventListener("DOMContentLoaded", () => {
             toggleBtn.innerHTML = `<i class="fa-regular fa-comment"></i> ${currentCount - 1}`;
           }
         } else {
-          alert(data.error || "Failed to delete comment");
+          console.error(data.error || "Failed to delete comment");
         }
       } catch (err) {
         console.error(err);
-        alert("Error deleting comment");
       }
     }
   });
+
+});
+
 
 // ############################
 document.addEventListener("DOMContentLoaded", () => {
@@ -728,7 +733,6 @@ document.addEventListener("click", async (e) => {
     }
 });
 
-});
 
 
 
