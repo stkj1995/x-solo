@@ -247,26 +247,6 @@ function displayResults(data) {
 // #########################
 document.addEventListener("DOMContentLoaded", () => {
 
-  let editingCommentPk = null; // Tracks if we're editing a comment
-
-  // ---------- Toggle comment form and focus textarea ----------
-  document.querySelectorAll(".post .fa-comment").forEach(icon => {
-    icon.addEventListener("click", e => {
-      const postDiv = e.target.closest(".post");
-      const form = postDiv.querySelector("form"); // picks the form inside this post
-      if (!form) return;
-
-      form.classList.toggle("hidden");
-      const textarea = form.querySelector("textarea[name='comment']");
-      if (!form.classList.contains("hidden") && textarea) {
-        textarea.focus();
-      }
-    });
-  });
-
-  // ---------- Handle comment submission ----------
- document.addEventListener("DOMContentLoaded", () => {
-
   // ---------- Toggle comment form ----------
   document.querySelectorAll(".post .fa-comment").forEach(icon => {
     icon.addEventListener("click", e => {
@@ -280,10 +260,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+document.addEventListener("DOMContentLoaded", () => {
+
   // ---------- Handle new comment submission ----------
-  document.querySelectorAll(".post form").forEach(form => {
+  document.querySelectorAll(".comment-form").forEach(form => {
     form.addEventListener("submit", async e => {
       e.preventDefault();
+
       const textarea = form.querySelector("textarea[name='comment']");
       if (!textarea) return;
 
@@ -304,8 +287,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const data = await res.json();
         if (data.status === "ok") {
-          const commentsContainer = form.parentElement.querySelector(".comment-list");
+          const commentsContainer = form.closest(".comments-container").querySelector(".comment-list");
+          if (!commentsContainer) return;
 
+          // Create new comment element
           const commentEl = document.createElement("div");
           commentEl.className = "comment p-2 bg-gray-50 flex justify-between items-start border border-gray-100 shadow-sm mt-2";
           commentEl.dataset.commentPk = data.comment_pk;
@@ -324,8 +309,11 @@ document.addEventListener("DOMContentLoaded", () => {
           commentsContainer.appendChild(commentEl);
           textarea.value = "";
 
-          // Add inline edit and delete listeners for the new comment
+          // Add edit/delete functionality
           addInlineEditDelete(commentEl);
+
+          // Update comment count
+          updateCommentCount(form.closest(".comments-container"));
         }
       } catch (err) {
         console.error(err);
@@ -336,19 +324,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------- Initialize existing comments ----------
   document.querySelectorAll(".comment").forEach(addInlineEditDelete);
 
+  // ---------- Functions ----------
   function addInlineEditDelete(commentEl) {
     const editBtn = commentEl.querySelector(".edit-comment");
     const deleteBtn = commentEl.querySelector(".delete-comment");
     const commentTextEl = commentEl.querySelector(".comment-text");
 
-    // Inline edit
-    editBtn.addEventListener("click", () => {
-      // Make content editable
-      commentTextEl.contentEditable = true;
-      commentTextEl.focus();
-      editBtn.textContent = "Save";
+    if (!editBtn || !deleteBtn || !commentTextEl) return;
 
-      editBtn.onclick = async () => {
+    // ---------- Edit/Save ----------
+    editBtn.addEventListener("click", async () => {
+      if (editBtn.textContent === "Edit") {
+        commentTextEl.contentEditable = true;
+        commentTextEl.focus();
+        editBtn.textContent = "Save";
+      } else {
         const updatedText = commentTextEl.textContent.trim();
         if (!updatedText) return;
 
@@ -372,10 +362,10 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
           console.error(err);
         }
-      };
+      }
     });
 
-    // Delete
+    // ---------- Delete ----------
     deleteBtn.addEventListener("click", async () => {
       const commentPk = commentEl.dataset.commentPk;
       if (!confirm("Delete this comment?")) return;
@@ -387,13 +377,24 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         const data = await res.json();
         if (data.status === "ok") {
+          const commentsContainer = commentEl.closest(".comments-container");
           commentEl.remove();
+          updateCommentCount(commentsContainer);
         }
       } catch (err) {
         console.error(err);
       }
     });
   }
+
+  // ---------- Update comment count ----------
+  function updateCommentCount(container) {
+    const countEl = container.querySelector(".comment-count");
+    if (!countEl) return;
+    const numComments = container.querySelectorAll(".comment").length;
+    countEl.textContent = numComments;
+  }
+
 });
 
   // Trigger search on button click
