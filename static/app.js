@@ -127,24 +127,59 @@ function cancelEdit(post_pk) {
 
 // ########################
 // DELETE POST
-function deletePost(post_pk) {
-    if (!confirm("Are you sure you want to delete this post?")) return;
+// function deletePost(post_pk) {
+//     if (!confirm("Are you sure you want to delete this post?")) return;
 
-    fetch(`/api-delete-post/${post_pk}`, {
+//     fetch(`/api-delete-post/${post_pk}`, {
+//         method: "POST",
+//         credentials: "same-origin"
+//     })
+//     .then(res => res.json())
+//     .then(data => {
+//         if (data.success) {
+//             const postDiv = document.getElementById(`post_${post_pk}`);
+//             if (postDiv) postDiv.remove();
+//         } else {
+//             alert("Failed to delete post: " + data.error);
+//         }
+//     })
+//     .catch(err => console.error("Delete post error:", err));
+// }
+document.addEventListener("DOMContentLoaded", () => {
+
+  // ----------------------------
+  // POST DELETE HANDLER
+  // ----------------------------
+  document.body.addEventListener("click", async (e) => {
+    // Check if clicked element is a delete-post button
+    if (!e.target.matches(".delete-post")) return;
+
+    const postBtn = e.target;
+    const postDiv = postBtn.closest(".post");
+    if (!postDiv) return;
+
+    const postPk = postDiv.id.replace("post_", "");
+
+    try {
+      const res = await fetch(`/api-delete-post/${postPk}`, {
         method: "POST",
         credentials: "same-origin"
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            const postDiv = document.getElementById(`post_${post_pk}`);
-            if (postDiv) postDiv.remove();
-        } else {
-            alert("Failed to delete post: " + data.error);
-        }
-    })
-    .catch(err => console.error("Delete post error:", err));
-}
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        // Remove post from DOM immediately
+        postDiv.remove();
+      } else {
+        console.error("Failed to delete post:", data.error);
+      }
+
+    } catch (err) {
+      console.error("Delete post error:", err);
+    }
+  });
+
+});
 
 // ##############################
 async function server(url, method, data_source_selector, function_after_fetch) {
