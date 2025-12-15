@@ -1354,3 +1354,367 @@ def api_delete_comment():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+
+
+
+
+################# CODE PRACTICE & PREP ##################
+
+#******************************************************************
+#### ROUTES WITH METHODS AND AN ENDPOINT (doors into your house) 
+#******************************************************************
+# Url is the endpoint in browser, GET = read/look
+
+# @app.get("/hello", methods=["GET"]) 
+# def hello():
+#     return "Hello world"
+
+# Can also use variable <> like @app.route("/signup/<lan>", methods=["GET", "POST"])
+
+## EXAMPLE: 
+# /signup/en
+
+
+#*****************************************************************
+#### VARIABLES & QUERY EXAMPLE (name tags sticking to the door)
+#*****************************************************************
+# <> "cool" sign and used as placeholder variable
+# Inside <> is the parameter names in the route function
+
+# @app.route("/profile/<first_name>/<last_name>")
+# def greet_user (first_name, last_name):
+#     return f"Hello {first_name} {last_name}"
+
+## EXAMPLE: 
+# /profile/sophie/teinvig
+
+# Variables can be used in a query string to get multiple search results
+
+
+#*******************************************************************
+#### F-STRINGS AND SYNTAX (letter envelopes with holes cut out)
+#*******************************************************************
+# Formatted string literal with this syntax - can hold variables or expressions {2 + 2}
+
+## EXAMPLE: 
+# f"Hello, {some_variable}
+
+# Or f"""Hello, {some_variable}.
+# You score {another_variable}"""
+
+
+#*******************************************************
+### REGULAR EXPRESSIONS/REGEX (cookie cutters/a shape)
+#*******************************************************
+# A pattern used to match and/or validate strings - can check if a string has the right structure like an email, password etc.
+
+## EXAMPLE: 
+# REGEX_EMAIL = REGEX_EMAIL = r"^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$"
+# def validate_user_email(lan = "en"):
+#     user_email = request.form.get("user_email", "").strip()
+#     if not re.match(REGEX_EMAIL, user_email): raise Exception(dictionary.invalid_email[lan], 400)
+#     return user_email
+
+# [0-9] is the character range
+# {1, 3} is a quantifier
+# + one or more times
+# * zero or more times
+# . means any character
+# \s matches whitespace
+# ^ start of the string
+# $ end of the string
+# () group of expressions
+# | means OR
+
+
+#*************************************************************
+### IMPORT A MODULE/LIBRARY (taking tools out of a toolbox)
+#*************************************************************
+# In the top of every py-files we write:
+
+## EXAMPLE:
+# "from flask import Flask, render_template, request, session, redirect, url_for, jsonify"
+
+# A module is a single python file such as app.py
+
+# Flask is the library that contains multiple modules with objects
+
+
+#**************************************************************************
+### SHOW A LINE OF CODE USING JINJA2 (little robots that build the html)
+#**************************************************************************
+# Stored in /templates folder inside a HTML template file
+# Can be used in micro components
+
+## EXAMPLE: 
+# {% include "_header.html" %} at the top
+# {% include "_footer.html" %} at the bottom
+
+# { } displays values (print things)
+# {% %} controls the flow such as loops, if-statements and include blocks (make actions)
+
+
+#******************************************
+### MICRO COMPONENTS (LEGO pieces)
+#******************************************
+# A small, reusable template fragment which can be inclueded inside templates
+# Lives in a seperate HTML file named with _ underscore
+# Avoids repeating the same code
+
+## EXAMPLE: 
+# {% include "___post_container.html" %}
+
+
+#***************************************************
+### IF/ELSE STATEMENTS (choosing paths in a maze)
+#***************************************************
+# Print is like console.log in js
+# Executes different code depending on whether a condition is true or false
+
+## EXAMPLE:
+# age = 18
+# if age >= 18:
+#   print("You are an adult")
+# else: 
+#   print("You are not an adult")
+
+
+#*****************************************************************************
+### PASS VARIABLE FROM APP.PY TO TEMPLATE (sending lunchboxes down a slide)
+#*****************************************************************************
+## EXAMPLE app.py: 
+# @app.get("/hello")
+# def hello():
+#     name = "Sophie"
+#     return render_template("hello.html", name=name)
+
+# We want the variable above to be shown/render, so Jinja can use the variable below:
+
+## EXAMPLE hello.html:
+# <html>
+# <body>
+#     <h1>Hello {{ name }}</h1>
+# </body>
+# </html>
+
+
+#***************************************************************************
+### CONTEXT PROCESSOR (machine sends the same lunchbox to all templates)
+#***************************************************************************
+# @app.context_processor is NOT a route
+# It defines variables or functions that are automatically avaible to all Jinja templates/HTML files (no need for render_template)
+
+
+#****************************
+### INSTALLING PACKAGES
+#****************************
+# By adding to requirements.txt
+# Then rebuild Docker container via terminal "docker compose up --build" 
+
+# It's also possible to use pip install r- requirements.txt for the local machine - this is not working inside the Docker environment
+
+
+#*************************************************
+### QUERY STRINGS (sticky notes on the door)
+#*************************************************
+# Passing optional data like search terms or filters
+# Flask reads query string with request.args.get("key") - add after the ? in the URL
+
+## EXAMPLE: 
+# /profile?first_name=Sophie&last_name=Teinvig
+
+# Above the keys are "first_name" and "last_name", "Sophie" and "Teinvig" are the values of those keys
+# The endpoint is in this case /profile (before the ?)
+
+
+#****************************************************
+### GET VARIABLES FROM A QUERY STRING (?key=value)
+#****************************************************
+# Flask provides request.args for this and use it inside a route function
+
+## EXAMPLE: 
+# some_variable = request.args.get("key")
+
+# request.args collects the key-value pairs from the URL query string,
+# while .get("key") gets the value of that key - now the variables are available
+
+# EXAMPLE: /profile?first_name=Sophie&last_name=Teinvig 
+
+# In the example above "Sophie" and "Teinvig" are the values I get from request.args.get("first_name") and request.args.get("last_name")
+
+
+#************************************************************************
+### HOW TO GET VARIABLES FROM A FORM (letters dropped in the mailbox)
+#************************************************************************
+# It's about reading data, where Flask provides request.form that reads inputted data from a form in HTML using POST (create) method
+
+# Used in a route function similarly to reading query strings with:
+
+## EXAMPLE: 
+# request.args: user_email = request.form.get("user_email", "").strip()
+
+# Explained: request.form collects all form fields the user submitted
+
+# get("user_email") returns the value of the input field named "user_email"
+
+# the second argument ("") makes sure that if the user submitted nothing, 
+# then the value becomes an empty string instead of None and keeps the DB normalized
+
+# Calling .strip() removes unnecessary spaces from the beginnning and end of the input
+
+
+#******************************************************************************
+### GET VALUES FROM A FORM THAT CONTAINS FILES (letter also contains package)
+#******************************************************************************
+# When a form includes file uploads like images and videos, Flask provides request.files to access them
+# Works similarly to request.form, but especially for uploaded files instead of text
+
+# In this case, the form in the HTML must include method="POST" (same as when getting variables from a form),
+# as well as enctype="multipart/form-data"
+
+# An uploaded image can read like this:
+
+## EXAMPLE:
+# image = request.files.get("image")
+
+
+#******************************************************************************
+### WHY IS VALIDATION IN BACKEND IMPORTANT? (security guard at the door)
+#******************************************************************************
+# To ensure security and correct data input
+# Users can input data that could break, hack or mess with the code
+# To avoid breaking the database, we don't want any incorrect or unsecure data stored there
+# Frontend validation isn't enough to protect the server and can be bypassed
+# Backend validation ensures that the data inputs in the database is correct
+
+## EXAMPLE: 
+# USER_PASSWORD_MIN = 6
+# USER_PASSWORD_MAX = 50
+# REGEX_USER_PASSWORD = f"^.{{{USER_PASSWORD_MIN},{USER_PASSWORD_MAX}}}$"
+# def validate_user_password(lan = "en"):
+#     user_password = request.form.get("user_password", "").strip()
+#     if not re.match(REGEX_USER_PASSWORD, user_password): raise Exception(dictionary.invalid_password[lan], 400)
+#     return user_password
+
+# Above the function checks if the passwords format is correct and raises an error if it's not correct
+
+
+#******************************************************************************
+### WHAT IS AN SQL PLACEHOLDER AND HOW TO USE IT? (empty bowls to fill later)
+#******************************************************************************
+# The syntax is %s and it represents a value that will be provided later
+# % is the placeholder
+# s is the string
+
+## EXAMPLE: 
+# q = "UPDATE users SET user_email = %s, user_username = %s, 
+# user_first_name = %s WHERE user_pk = %s"
+
+# Prevents harmful input that could hack the DB and also helpts with keeping the code clean
+
+
+#**************************************************
+### FIX THE FRONTEND VALIDATION OF THE PASSWORD
+#**************************************************
+# I validate passwords in the backend using REGEX
+
+# Frontend validation highlights errors visually,
+# while backend validation enforces security
+
+## EXAMPLE html:
+# <input
+#     type="password"
+#     name="user_password"
+#     class="{% if error_password %}error{% endif %}"
+#     placeholder="Password"
+# >
+
+## EXAMPLE app.py:
+# @app.route("/signup", methods=["GET", "POST"])
+# def signup():
+#     if request.method == "POST":
+#         password = request.form.get("user_password", "").strip()
+
+#         if not password:
+#             return render_template(
+#                 "signup.html",
+#                 error_password=True
+#             )
+
+#     return render_template("signup.html")
+
+# In the example above, backend detects the missing password, passes an error flag to the template,
+# and Jinja adds a CSS class that makes the input field red
+
+
+#******************************************
+### CHANGE THE NAME IN HTML INPUT FIELD
+#******************************************
+# Testing data flow understanding
+
+## EXAMPLE html:
+# <input type="email" name="user_email"> 
+# can be changed to 
+# <input type="email" name="email">
+
+## EXAMPLE app.py:
+# email = request.form.get("user_email", "").strip()
+# can be changed to
+# email = request.form.get("email", "").strip()
+
+# The backend function could now be
+# def validate_user_email():
+#   email = request.form.get("email", "").strip()
+
+# When changing name attribute of an input field, 
+# it must also be changed everywhere else is accessed in Flask
+# The changing includes request.form, validation functions and any logic that depends on it
+
+
+#*************************
+### POINT TO A TUPLE ()
+#*************************
+# A tuple is used when passing values to SQL placeholders
+
+## EXAMPLE:
+# cur.execute(
+#     "UPDATE users SET user_email = %s WHERE user_pk = %s",
+#     (user_email, user_pk)
+# )
+
+# In the example above, the tuple is (user_email, user_pk)
+
+# The comma in a tuple is required either if there is one value or more
+
+# The values passed to SQL placeholders are stored in a tuple,
+# which keeps the order and prevents SQL injection
+
+# Tuples are immutable, which makes them safe to use for DB parameters
+
+
+#*************************************************
+### WHAT HAPPENS AFTER AN EXCEPTION IS RAISED?
+#*************************************************
+# Raising an exception is like hitting a red "stop" button
+
+# Caught exception means that I have a safety net, the program can continue safely
+# Uncaught exception means that program stops, server returns an error
+
+## EXAMPLE:
+# @app.route("/login", methods=["POST"])
+# def login():
+#     email = request.form.get("email", "").strip()
+#     user = get_user_by_email(email)
+
+#     if not user:
+#         # Stop execution here, move to error handling
+#         raise Exception("User not found", 400)
+
+#     # This code will NOT run if user is None
+#     session["user_id"] = user["user_pk"]
+#     return redirect("/home")
+
+# In the example above, Python stops executing the current function immediately
+# It does not run any code after raise in that function
+# The exception is now "thrown" to the calling context
